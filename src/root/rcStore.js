@@ -48,6 +48,10 @@ export default class nxStore extends DataTable{
             method: 'insertAfter'
         },
         {
+            name: 'insertMany$table',
+            method: 'insertMany'
+        },
+        {
             name: 'update$table',
             method: 'update'
         },

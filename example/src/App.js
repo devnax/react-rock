@@ -1,7 +1,6 @@
 import React from 'react'
 
-import { createStore, useStore } from 'react-rock'
-import 'react-rock/dist/index.css'
+import { createStore, useStore, useMeta, rawStore } from 'react-rock'
 
 const MainApp = ({children}) => {
   return (
@@ -9,13 +8,23 @@ const MainApp = ({children}) => {
   )
 }
 
-const StoreRoot = createStore(MainApp, {})
 
 const App = () => {
   const store = useStore()
-  return <StoreRoot >
+  const [a, s] = useMeta('a', false)
+  return <MainApp >
+    {a.toString()}
+    <button onClick={() => s(!a)}>Click</button>
     Create React Library Example 😄 
-  </StoreRoot>
+  </MainApp>
 }
 
-export default App
+
+const StoreRoot = createStore(App, {rawStore: true})
+
+
+
+const s = rawStore()
+console.log(s);
+
+export default StoreRoot

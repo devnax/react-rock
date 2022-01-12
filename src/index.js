@@ -13,7 +13,7 @@ import {
     is_empty
 } from "./utils";
 
-import {useStore, useConfig, storeID, getStore, rawStore} from './helpers/storeRoot'
+import {useStore, useConfig, storeID, getStore, useMeta, rawStore} from './helpers/storeRoot'
 
 import withStore from './helpers/withStore'
 import createStore from './helpers/createStore' 
@@ -36,6 +36,7 @@ export {
     useStore, useConfig, storeID, getStore, rawStore,
     withStore,
     createStore,
+    useMeta,
 
     rcStore
 }

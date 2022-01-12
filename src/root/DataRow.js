@@ -107,7 +107,7 @@ export default class DataRow extends MetaData{
     }
 
     get(tb, where){
-        if(!where){
+        if(where === undefined || where === null){
             return
         }
         const data = this.query(tb, where)

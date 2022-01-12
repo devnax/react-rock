@@ -4,6 +4,7 @@ import {storeState, rawStoreInit} from './storeRoot'
 import initStore from './initStore'
 import { is_object } from "../utils";
 
+
 const Root = ({RootComp, props}) => {
     const store = initStore()
     const {onReady, onUpdate} = storeState.config
@@ -27,10 +28,8 @@ const Root = ({RootComp, props}) => {
 }
 
 const createStore = (RootComp, config) => {
-    
     rawStoreInit(config)
-
-
+    
     const Prov = (props) => (
         <Provider config={config}>
             <Root RootComp={RootComp} props={props}/>
