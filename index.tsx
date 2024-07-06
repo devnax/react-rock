@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { createState, StoreComponent } from './src'
+import { createState, noDispatch, StoreComponent } from './src'
 
 const rows = [
   {
@@ -21,7 +21,14 @@ const rows = [
 ]
 
 
-const store = createState()
+type Row = {
+  name: string;
+  email: string;
+  age: number;
+}
+
+const store = createState<Row, {}>()
+store.createMany(rows)
 
 class A extends StoreComponent {
 
@@ -32,11 +39,15 @@ class A extends StoreComponent {
       }
     })
 
+    const all = store.getAll()
+    console.log(all);
+
+
     return (
       <div>
-        {items.map((item: any, idx: any) => {
+        {all.map((item, idx: any) => {
           return (
-            <li key={idx}>{item.name}</li>
+            <li key={idx}>{item.name} - {item._index}</li>
           )
         })}
       </div>
@@ -46,21 +57,26 @@ class A extends StoreComponent {
 
 
 
-
-
 const App = () => {
-
-
   return (
     <div>
       <A />
       <button
         onClick={() => {
-          store.create({
-            name: Math.random()
+          noDispatch(() => {
+            store.create({
+              name: Math.random().toString()
+            })
           })
         }}
       >Add+</button>
+      <button
+        onClick={() => {
+          store.create({
+            name: Math.random().toString()
+          })
+        }}
+      >View</button>
     </div>
   );
 };

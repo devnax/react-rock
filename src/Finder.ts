@@ -16,8 +16,8 @@ export type QueryType<Row = {}> = {
 
 export type FinderArgsType<Row> = {
     getRow?: (row: Row, index: number) => Row | void;
-    // skip?: number;
-    // take?: number;
+    skip?: number;
+    take?: number;
 }
 
 

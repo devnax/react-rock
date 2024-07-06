@@ -1,18 +1,18 @@
 "use client"
-import React, { useId, useMemo, useState } from 'react'
+import React, { useEffect, useId, useMemo, useState } from 'react'
 import { ArgsType, RowType, WhereType } from './types';
-import Finder, { QueryType } from './Finder';
+import Finder from './Finder';
 
 
-const _row = <R,>(row: R): RowType<R> => {
+const _row = <R,>(row: Partial<R>): RowType<R> => {
     const _id = (row as any)?._id || _uid(row)
-    let _observe = (row as any)._observe || Date.now().toString()
+    let _observe = (row as any)._observe || Date.now()
     return { ...row, _id, _observe } as any
 }
 
 const _cacheKey = (where: object) => JSON.stringify(where)
 
-const _uid = <R,>(row: R) => {
+const _uid = <R,>(row: Partial<R>) => {
     let str = JSON.stringify(row) + Date.now().toString()
     var hash = 0, len = str.length;
     for (var i = 0; i < len; i++) {
@@ -23,7 +23,12 @@ const _uid = <R,>(row: R) => {
 }
 
 
-export const noDispatch = () => { }
+let activeDispatch = true
+export const noDispatch = (cb: Function) => {
+    activeDispatch = false
+    cb()
+    activeDispatch = true
+}
 
 
 export const createState = <Row extends object, MetaProps>() => {
@@ -31,26 +36,33 @@ export const createState = <Row extends object, MetaProps>() => {
     let META = new Map<keyof MetaProps, any>()
     const CACHE = new Map<string, RowType<Row>[]>
     const STATE_INFO = {
-        dispatches: {} as { [id: string]: Function },
-        observe: 0
+        dispatches: new Map<string, Function>(),
+        observe: 0,
+        meta_observe: 0
     }
 
 
-    const _dispatch = () => {
+    const _dispatch_store = () => {
         STATE_INFO.observe = Math.random()
         CACHE.clear()
-        for (let id in STATE_INFO.dispatches) {
-            const dispatch = STATE_INFO.dispatches[id]
-            dispatch()
+        if (activeDispatch) {
+            STATE_INFO.dispatches.forEach(d => d())
+        }
+    }
+
+    const _dispatch_meta = () => {
+        STATE_INFO.meta_observe = Math.random()
+        if (activeDispatch) {
+            STATE_INFO.dispatches.forEach(d => d())
         }
     }
 
     abstract class StateFactory {
 
-        static create(row: Row): RowType<Row> {
+        static create(row: Partial<Row>): RowType<Row> {
             const r = _row<Row>(row)
-            DATA.push(r)
-            _dispatch()
+            DATA.push({ ...r, _index: DATA.length + 1 })
+            _dispatch_store()
             CACHE.clear()
             return r
         }
@@ -58,9 +70,9 @@ export const createState = <Row extends object, MetaProps>() => {
         static createMany(rows: Row[]) {
             for (let row of rows) {
                 const r = _row<Row>(row)
-                DATA.push(r)
+                DATA.push({ ...r, _index: DATA.length + 1 })
             }
-            _dispatch()
+            _dispatch_store()
         }
 
         static update(row: Partial<Row>, where: WhereType<Row>, args?: ArgsType<Row>) {
@@ -68,20 +80,17 @@ export const createState = <Row extends object, MetaProps>() => {
                 ...args,
                 getRow: (r, index) => {
                     args?.getRow && args.getRow(r, index)
-                    DATA[index] = _row({ ...r, ...row })
+                    DATA[index] = _row<Row>({ ...r, ...row })
                 }
             })
-            _dispatch()
+            _dispatch_store()
         }
 
         static updateAll(row: Partial<Row>) {
             for (let i = 0; i < DATA.length; i++) {
-                DATA[i] = _row({
-                    ...DATA[i],
-                    ...row
-                })
+                DATA[i] = _row<Row>({ ...DATA[i], ...row })
             }
-            _dispatch()
+            _dispatch_store()
         }
 
         static delete(where: WhereType<Row>, args?: ArgsType<Row>) {
@@ -89,20 +98,23 @@ export const createState = <Row extends object, MetaProps>() => {
             for (let index of found.indexes) {
                 DATA.splice(index, 1)
             }
-            _dispatch()
+            _dispatch_store()
         }
 
         static deleteAll() {
             DATA = []
-            _dispatch()
+            _dispatch_store()
         }
 
         static getAll() {
             try {
                 const id = useId()
                 const [, dispatch] = useState(0)
-                useMemo(() => {
-                    STATE_INFO.dispatches[id] = () => dispatch(Math.random())
+                useEffect(() => {
+                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
+                    return () => {
+                        STATE_INFO.dispatches.delete(id)
+                    }
                 }, [])
                 return DATA
             } catch (error) {
@@ -114,8 +126,11 @@ export const createState = <Row extends object, MetaProps>() => {
             try {
                 const id = useId()
                 const [, dispatch] = useState(0)
-                useMemo(() => {
-                    STATE_INFO.dispatches[id] = () => dispatch(Math.random())
+                useEffect(() => {
+                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
+                    return () => {
+                        STATE_INFO.dispatches.delete(id)
+                    }
                 }, [])
 
                 return useMemo(() => {
@@ -142,16 +157,81 @@ export const createState = <Row extends object, MetaProps>() => {
             return StateFactory.findFirst({ _id })
         }
 
+        static getIndex(where: WhereType<Row>): number | void {
+            const d = StateFactory.findFirst(where)
+            return d && d._index
+        }
+
+        static move(oldIdx: number, newIdx: number) {
+            const row: any = DATA[oldIdx]
+            if (row) {
+                DATA.splice(oldIdx, 1)
+                DATA.splice(newIdx, 0, _row(row))
+                _dispatch_store()
+            }
+        }
+
         // ============ Meta
-        setMeta() { }
-        getMeta() { }
-        deleteMeta() { }
-        clearMeta() { }
+        setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T]) {
+            META.set(key, value)
+            _dispatch_meta()
+        }
+
+        getMeta<T extends keyof MetaProps>(key: T, def?: any): MetaProps[T] {
+            try {
+                const id = useId()
+                const [, dispatch] = useState(0)
+                useEffect(() => {
+                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
+                    return () => {
+                        STATE_INFO.dispatches.delete(id)
+                    }
+                }, [])
+                return META.get(key) || def
+            } catch (error) {
+                return META.get(key) || def
+            }
+        }
+
+        getAllMeta(): MetaProps {
+            try {
+                const id = useId()
+                const [, dispatch] = useState(0)
+                useEffect(() => {
+                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
+                    return () => {
+                        STATE_INFO.dispatches.delete(id)
+                    }
+                }, [])
+                return useMemo(() => {
+                    let metas: any = {}
+                    META.forEach((v, k) => {
+                        metas[k] = v
+                    })
+                    return metas
+                }, [STATE_INFO.meta_observe])
+            } catch (error) {
+                let metas: any = {}
+                META.forEach((v, k) => {
+                    metas[k] = v
+                })
+                return metas
+            }
+        }
+
+        deleteMeta<T extends keyof MetaProps>(key: T) {
+            META.delete(key)
+            _dispatch_meta()
+        }
+
+        deleteAllMeta() {
+            META.clear()
+            _dispatch_meta()
+        }
 
         // ============= Util
 
-        static move() { }
-        static getIndex() { }
+
 
     }
 
@@ -161,7 +241,7 @@ export const createState = <Row extends object, MetaProps>() => {
 export class StoreComponent<P = {}, S = {}, SS = any> extends React.Component<P, S, SS> {
     constructor(props: P) {
         super(props)
-        const R = this.render
+        const R = this.render.bind(this)
         this.render = () => <><R /></>
     }
 }
