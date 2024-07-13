@@ -1,11 +1,13 @@
 {
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "name": "react-rock",
+  "author": "Naxrul Ahmed",
+  "module": "dist/react-rock.esm.js",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "engines": {
     "node": ">=10"
@@ -34,9 +36,7 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "react-rock",
-  "author": "Naxrul Ahmed",
-  "module": "dist/react-rock.esm.js",
+  
   "size-limit": [
     {
       "path": "dist/react-rock.cjs.production.min.js",
@@ -58,9 +58,7 @@
     "size-limit": "^11.1.4",
     "tsdx": "^0.14.1",
     "tslib": "^2.6.3",
-    "typescript": "^5.5.3"
-  },
-  "dependencies": {
+    "typescript": "^5.5.3",
     "parcel": "^2.12.0"
   }
 }

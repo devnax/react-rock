@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { createState, noDispatch, StoreComponent } from './src'
+import { createState, noDispatch, StateComponent } from './src'
 
 const rows = [
   {
@@ -30,7 +30,7 @@ type Row = {
 const store = createState<Row, {}>()
 store.createMany(rows)
 
-class A extends StoreComponent {
+class A extends StateComponent {
 
   render() {
     const items: any = store.find({

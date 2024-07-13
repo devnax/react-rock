@@ -2,26 +2,20 @@
 import React, { useEffect, useId, useMemo, useState } from 'react'
 import { ArgsType, RowType, WhereType } from './types';
 import Finder from './Finder';
+export * from './types'
 
+type DataType = "state" | "meta"
 
-const _row = <R,>(row: Partial<R>): RowType<R> => {
-    const _id = (row as any)?._id || _uid(row)
-    let _observe = (row as any)._observe || Date.now()
-    return { ...row, _id, _observe } as any
+const _row = <R,>(row: Partial<RowType<R>>): RowType<R> => {
+    return {
+        ...row,
+        _id: row._id || _uid(),
+        _observe: row._observe || _random()
+    } as any
 }
 
-const _cacheKey = (where: object) => JSON.stringify(where)
-
-const _uid = <R,>(row: Partial<R>) => {
-    let str = JSON.stringify(row) + Date.now().toString()
-    var hash = 0, len = str.length;
-    for (var i = 0; i < len; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
-    }
-    return parseInt(hash.toString(4)).toString(32).replace("-", "").substring(0, 15)
-}
-
+const _random = () => Date.now() + Math.floor(1000 + Math.random() * 9000)
+const _uid = () => _random().toString(32).replace("-", "").substring(0, 15)
 
 let activeDispatch = true
 export const noDispatch = (cb: Function) => {
@@ -34,36 +28,38 @@ export const noDispatch = (cb: Function) => {
 export const createState = <Row extends object, MetaProps>() => {
     let DATA: RowType<Row>[] = []
     let META = new Map<keyof MetaProps, any>()
-    const CACHE = new Map<string, RowType<Row>[]>
     const STATE_INFO = {
-        dispatches: new Map<string, Function>(),
+        dispatches: new Map<string, { type: DataType, cb: Function }>(),
         observe: 0,
         meta_observe: 0
     }
 
-
-    const _dispatch_store = () => {
+    const _dispatch = (type: DataType) => {
         STATE_INFO.observe = Math.random()
-        CACHE.clear()
         if (activeDispatch) {
-            STATE_INFO.dispatches.forEach(d => d())
+            STATE_INFO.dispatches.forEach(d => {
+                d.type === type && d.cb()
+            })
         }
     }
 
-    const _dispatch_meta = () => {
-        STATE_INFO.meta_observe = Math.random()
-        if (activeDispatch) {
-            STATE_INFO.dispatches.forEach(d => d())
-        }
+    const useHook = (type: DataType) => {
+        const id = useId()
+        const [, dispatch] = useState(0)
+        useEffect(() => {
+            STATE_INFO.dispatches.set(id, { type, cb: () => dispatch(Math.random()) })
+            return () => {
+                STATE_INFO.dispatches.delete(id)
+            }
+        }, [])
     }
 
     abstract class StateFactory {
 
         static create(row: Partial<Row>): RowType<Row> {
-            const r = _row<Row>(row)
+            const r = _row<Row>(row as any)
             DATA.push({ ...r, _index: DATA.length + 1 })
-            _dispatch_store()
-            CACHE.clear()
+            _dispatch("state")
             return r
         }
 
@@ -72,7 +68,7 @@ export const createState = <Row extends object, MetaProps>() => {
                 const r = _row<Row>(row)
                 DATA.push({ ...r, _index: DATA.length + 1 })
             }
-            _dispatch_store()
+            _dispatch("state")
         }
 
         static update(row: Partial<Row>, where: WhereType<Row>, args?: ArgsType<Row>) {
@@ -83,14 +79,14 @@ export const createState = <Row extends object, MetaProps>() => {
                     DATA[index] = _row<Row>({ ...r, ...row })
                 }
             })
-            _dispatch_store()
+            _dispatch("state")
         }
 
         static updateAll(row: Partial<Row>) {
             for (let i = 0; i < DATA.length; i++) {
                 DATA[i] = _row<Row>({ ...DATA[i], ...row })
             }
-            _dispatch_store()
+            _dispatch("state")
         }
 
         static delete(where: WhereType<Row>, args?: ArgsType<Row>) {
@@ -98,24 +94,17 @@ export const createState = <Row extends object, MetaProps>() => {
             for (let index of found.indexes) {
                 DATA.splice(index, 1)
             }
-            _dispatch_store()
+            _dispatch("state")
         }
 
         static deleteAll() {
             DATA = []
-            _dispatch_store()
+            _dispatch("state")
         }
 
         static getAll() {
             try {
-                const id = useId()
-                const [, dispatch] = useState(0)
-                useEffect(() => {
-                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
-                    return () => {
-                        STATE_INFO.dispatches.delete(id)
-                    }
-                }, [])
+                useHook("state")
                 return DATA
             } catch (error) {
                 return DATA
@@ -124,42 +113,19 @@ export const createState = <Row extends object, MetaProps>() => {
 
         static find(where: WhereType<Row>, args?: ArgsType<Row>): RowType<Row>[] {
             try {
-                const id = useId()
-                const [, dispatch] = useState(0)
-                useEffect(() => {
-                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
-                    return () => {
-                        STATE_INFO.dispatches.delete(id)
-                    }
-                }, [])
-
-                return useMemo(() => {
-                    const cacheKey = _cacheKey(where)
-                    const has = CACHE.get(cacheKey)
-                    if (has) return has
-                    const found = Finder(DATA, where, args)
-                    CACHE.set(cacheKey, found.rows)
-                    return found.rows
-
-                }, [STATE_INFO.observe])
+                useHook("state")
+                return useMemo(() => Finder(DATA, where, args).rows, [STATE_INFO.observe])
             } catch (error) {
-                const found = Finder(DATA, where, args)
-                return found.rows
+                return Finder(DATA, where, args).rows
             }
         }
 
         static findFirst(where: WhereType<Row>) {
-            const found = StateFactory.find(where)
-            if (found.length) return found[0]
+            return StateFactory.find(where)[0]
         }
 
         static findById(_id: string) {
             return StateFactory.findFirst({ _id })
-        }
-
-        static getIndex(where: WhereType<Row>): number | void {
-            const d = StateFactory.findFirst(where)
-            return d && d._index
         }
 
         static move(oldIdx: number, newIdx: number) {
@@ -167,26 +133,18 @@ export const createState = <Row extends object, MetaProps>() => {
             if (row) {
                 DATA.splice(oldIdx, 1)
                 DATA.splice(newIdx, 0, _row(row))
-                _dispatch_store()
+                _dispatch("state")
             }
         }
 
-        // ============ Meta
         setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T]) {
             META.set(key, value)
-            _dispatch_meta()
+            _dispatch("meta")
         }
 
         getMeta<T extends keyof MetaProps>(key: T, def?: any): MetaProps[T] {
             try {
-                const id = useId()
-                const [, dispatch] = useState(0)
-                useEffect(() => {
-                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
-                    return () => {
-                        STATE_INFO.dispatches.delete(id)
-                    }
-                }, [])
+                useHook("meta")
                 return META.get(key) || def
             } catch (error) {
                 return META.get(key) || def
@@ -195,14 +153,7 @@ export const createState = <Row extends object, MetaProps>() => {
 
         getAllMeta(): MetaProps {
             try {
-                const id = useId()
-                const [, dispatch] = useState(0)
-                useEffect(() => {
-                    STATE_INFO.dispatches.set(id, () => dispatch(Math.random()))
-                    return () => {
-                        STATE_INFO.dispatches.delete(id)
-                    }
-                }, [])
+                useHook("meta")
                 return useMemo(() => {
                     let metas: any = {}
                     META.forEach((v, k) => {
@@ -221,27 +172,23 @@ export const createState = <Row extends object, MetaProps>() => {
 
         deleteMeta<T extends keyof MetaProps>(key: T) {
             META.delete(key)
-            _dispatch_meta()
+            _dispatch("meta")
         }
 
         deleteAllMeta() {
             META.clear()
-            _dispatch_meta()
+            _dispatch("meta")
         }
-
-        // ============= Util
-
-
 
     }
 
     return StateFactory
 }
 
-export class StoreComponent<P = {}, S = {}, SS = any> extends React.Component<P, S, SS> {
+export class StateComponent<P = {}, S = {}, SS = any> extends React.Component<P, S, SS> {
     constructor(props: P) {
         super(props)
-        const R = this.render.bind(this)
+        const R = this.render.bind(this) as any
         this.render = () => <><R /></>
     }
 }
