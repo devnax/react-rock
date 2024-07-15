@@ -1,7 +1,8 @@
-import React, { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { ArgsType, IStateHandler, RowType, StateDataType, WhereType } from './types';
 import Finder from './Finder';
 export * from './types'
+export * from './StateComponent'
 
 const _row = <R,>(row: Partial<RowType<R>>): RowType<R> => {
     return {
@@ -21,7 +22,7 @@ export const noDispatch = (cb: Function) => {
     activeDispatch = true
 }
 
-export const createState = <Row extends object, MetaProps>() => {
+export const createState = <Row extends object, MetaProps extends object = {}>() => {
     let DATA: RowType<Row>[] = []
     let META = new Map<keyof MetaProps, any>()
     const STATE_INFO = {
@@ -166,10 +167,3 @@ export const createState = <Row extends object, MetaProps>() => {
     return StateHandler as IStateHandler<Row, MetaProps>
 }
 
-export class StateComponent<P = {}, S = {}, SS = any> extends React.Component<P, S, SS> {
-    constructor(props: P) {
-        super(props)
-        const R = this.render.bind(this) as any
-        this.render = () => <><R /></>
-    }
-}

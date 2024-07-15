@@ -10,6 +10,7 @@
       "dom",
       "esnext"
     ],
+    "target": "ESNext",
     "importHelpers": true,
     // output .d.ts declaration files for consumers
     "declaration": true,
@@ -17,6 +18,7 @@
     "sourceMap": true,
     // match output dir to input dir. e.g. dist/index instead of dist/src/index
     "rootDir": "./src",
+    "outDir": "./dist",
     // stricter type-checking for stronger correctness. Recommended by TS
     "strict": true,
     // linter checks for common issues
@@ -36,6 +38,6 @@
     // error out if import and file system have a casing mismatch. Recommended by TS
     "forceConsistentCasingInFileNames": true,
     // `tsdx build` ignores this option, but it is commonly used when type-checking separately with `tsc`
-    "noEmit": true,
+    // "noEmit": true,
   }
 }

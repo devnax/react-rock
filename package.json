@@ -1,8 +1,8 @@
 {
-  "version": "3.0.1",
+  "version": "3.0.2",
   "name": "react-rock",
   "author": "Naxrul Ahmed",
-  "module": "dist/react-rock.esm.js",
+  "module": "dist/index.js",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -13,22 +13,12 @@
     "node": ">=10"
   },
   "scripts": {
-    "start": "tsdx watch",
-    "build": "tsdx build",
-    "dev": "parcel --no-cache index.html",
-    "test": "tsdx test --passWithNoTests",
-    "lint": "tsdx lint",
-    "prepare": "tsdx build",
-    "size": "size-limit",
-    "analyze": "size-limit --why"
+    "start": "parcel --no-cache index.html",
+    "build": "npx rimraf ./dist && npx tsc",
+    "prepare": "npm run build"
   },
   "peerDependencies": {
     "react": ">=16"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "tsdx lint"
-    }
   },
   "prettier": {
     "printWidth": 80,
@@ -36,29 +26,13 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  
-  "size-limit": [
-    {
-      "path": "dist/react-rock.cjs.production.min.js",
-      "limit": "10 KB"
-    },
-    {
-      "path": "dist/react-rock.esm.js",
-      "limit": "10 KB"
-    }
-  ],
   "devDependencies": {
     "@size-limit/preset-small-lib": "^11.1.4",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "husky": "^9.0.11",
-    "process": "^0.11.10",
+    "parcel": "^2.12.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "size-limit": "^11.1.4",
-    "tsdx": "^0.14.1",
-    "tslib": "^2.6.3",
-    "typescript": "^5.5.3",
-    "parcel": "^2.12.0"
+    "typescript": "^5.5.3"
   }
 }
