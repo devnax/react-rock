@@ -1,10 +1,7 @@
-"use client"
 import React, { useEffect, useId, useMemo, useState } from 'react'
-import { ArgsType, RowType, WhereType } from './types';
+import { ArgsType, IStateHandler, RowType, StateDataType, WhereType } from './types';
 import Finder from './Finder';
 export * from './types'
-
-type DataType = "state" | "meta"
 
 const _row = <R,>(row: Partial<RowType<R>>): RowType<R> => {
     return {
@@ -24,26 +21,21 @@ export const noDispatch = (cb: Function) => {
     activeDispatch = true
 }
 
-
 export const createState = <Row extends object, MetaProps>() => {
     let DATA: RowType<Row>[] = []
     let META = new Map<keyof MetaProps, any>()
     const STATE_INFO = {
-        dispatches: new Map<string, { type: DataType, cb: Function }>(),
+        dispatches: new Map<string, { type: StateDataType, cb: Function }>(),
         observe: 0,
         meta_observe: 0
     }
 
-    const _dispatch = (type: DataType) => {
-        STATE_INFO.observe = Math.random()
-        if (activeDispatch) {
-            STATE_INFO.dispatches.forEach(d => {
-                d.type === type && d.cb()
-            })
-        }
+    const _dispatch = (type: StateDataType) => {
+        STATE_INFO[type == "meta" ? "meta_observe" : "observe"] = Math.random()
+        activeDispatch && STATE_INFO.dispatches.forEach(d => d.type === type && d.cb())
     }
 
-    const useHook = (type: DataType) => {
+    const useHook = (type: StateDataType) => {
         const id = useId()
         const [, dispatch] = useState(0)
         useEffect(() => {
@@ -54,11 +46,11 @@ export const createState = <Row extends object, MetaProps>() => {
         }, [])
     }
 
-    abstract class StateFactory {
+    abstract class StateHandler {
 
-        static create(row: Partial<Row>): RowType<Row> {
+        static create(row: Row): RowType<Row> {
             const r = _row<Row>(row as any)
-            DATA.push({ ...r, _index: DATA.length + 1 })
+            DATA.push(r)
             _dispatch("state")
             return r
         }
@@ -66,7 +58,7 @@ export const createState = <Row extends object, MetaProps>() => {
         static createMany(rows: Row[]) {
             for (let row of rows) {
                 const r = _row<Row>(row)
-                DATA.push({ ...r, _index: DATA.length + 1 })
+                DATA.push(r)
             }
             _dispatch("state")
         }
@@ -97,17 +89,17 @@ export const createState = <Row extends object, MetaProps>() => {
             _dispatch("state")
         }
 
-        static deleteAll() {
+        static clearState() {
             DATA = []
             _dispatch("state")
         }
 
-        static getAll() {
+        static getAll(args?: ArgsType<Row>) {
             try {
                 useHook("state")
-                return DATA
+                return useMemo(() => Finder(DATA, null, args).rows, [STATE_INFO.observe])
             } catch (error) {
-                return DATA
+                return Finder(DATA, null, args)
             }
         }
 
@@ -121,11 +113,11 @@ export const createState = <Row extends object, MetaProps>() => {
         }
 
         static findFirst(where: WhereType<Row>) {
-            return StateFactory.find(where)[0]
+            return StateHandler.find(where)[0]
         }
 
         static findById(_id: string) {
-            return StateFactory.findFirst({ _id })
+            return StateHandler.findFirst({ _id })
         }
 
         static move(oldIdx: number, newIdx: number) {
@@ -137,12 +129,12 @@ export const createState = <Row extends object, MetaProps>() => {
             }
         }
 
-        setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T]) {
+        static setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T]) {
             META.set(key, value)
             _dispatch("meta")
         }
 
-        getMeta<T extends keyof MetaProps>(key: T, def?: any): MetaProps[T] {
+        static getMeta<T extends keyof MetaProps>(key: T, def?: any): MetaProps[T] {
             try {
                 useHook("meta")
                 return META.get(key) || def
@@ -151,38 +143,27 @@ export const createState = <Row extends object, MetaProps>() => {
             }
         }
 
-        getAllMeta(): MetaProps {
+        static getAllMeta(): MetaProps {
             try {
                 useHook("meta")
-                return useMemo(() => {
-                    let metas: any = {}
-                    META.forEach((v, k) => {
-                        metas[k] = v
-                    })
-                    return metas
-                }, [STATE_INFO.meta_observe])
+                return useMemo(() => Object.fromEntries(META) as MetaProps, [STATE_INFO.meta_observe])
             } catch (error) {
-                let metas: any = {}
-                META.forEach((v, k) => {
-                    metas[k] = v
-                })
-                return metas
+                return Object.fromEntries(META) as MetaProps
             }
         }
 
-        deleteMeta<T extends keyof MetaProps>(key: T) {
+        static deleteMeta<T extends keyof MetaProps>(key: T) {
             META.delete(key)
             _dispatch("meta")
         }
 
-        deleteAllMeta() {
+        static clearMeta() {
             META.clear()
             _dispatch("meta")
         }
-
     }
 
-    return StateFactory
+    return StateHandler as IStateHandler<Row, MetaProps>
 }
 
 export class StateComponent<P = {}, S = {}, SS = any> extends React.Component<P, S, SS> {

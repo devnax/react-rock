@@ -20,6 +20,7 @@ export type FinderArgsType<Row> = {
     take?: number;
 }
 
+const isOb = (ob: any) => typeof ob === "object" && !Array.isArray(ob) && ob !== null
 
 const isInQuery = <Row>(rowVlaue: Row, queryObject: QueryValueType) => {
     let match = true
@@ -75,31 +76,34 @@ const isInQuery = <Row>(rowVlaue: Row, queryObject: QueryValueType) => {
     return match
 }
 
-const Finder = <Row extends object>(rows: Row[], query: QueryType<Row>, args?: FinderArgsType<Row>) => {
+const Finder = <Row extends object>(rows: Row[], query: null | QueryType<Row>, args?: FinderArgsType<Row>) => {
     let result: Row[] = []
     let indexes: number[] = []
 
     for (let i = 0; i < rows.length; i++) {
         let row = rows[i]
         let found = false;
+        if (isOb(query)) {
+            for (let rowKey in query) {
+                let queryVal = query[rowKey]
+                if (!(rowKey in row)) break;
 
-        for (let rowKey in query) {
-            let queryVal = query[rowKey]
-            if (!(rowKey in row)) break;
-
-            if (typeof queryVal === "object" && !Array.isArray(queryVal) && queryVal !== null) {
-                if (isInQuery(row[rowKey], queryVal as any)) {
-                    found = true
+                if (isOb(queryVal)) {
+                    if (isInQuery(row[rowKey], queryVal as any)) {
+                        found = true
+                    } else {
+                        found = false
+                        break;
+                    }
+                } else if (row[rowKey] === queryVal) {
+                    found = true;
                 } else {
                     found = false
                     break;
                 }
-            } else if (row[rowKey] === queryVal) {
-                found = true;
-            } else {
-                found = false
-                break;
             }
+        } else {
+            found = true
         }
 
         if (found) {
@@ -114,6 +118,17 @@ const Finder = <Row extends object>(rows: Row[], query: QueryType<Row>, args?: F
             result.push({ ...row, _index: i })
             indexes.push(i)
         }
+    }
+
+    const take = args?.take || result.length
+    const skip = args?.skip || 0
+
+    if (args?.take && args?.skip) {
+        result = result.splice(skip, take)
+    } else if (!args?.skip && args?.take) {
+        result.splice(args.take)
+    } else if (!args?.take && args?.skip) {
+        result = result.splice(args.skip)
     }
 
     return { rows: result, indexes }

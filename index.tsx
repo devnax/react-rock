@@ -5,8 +5,23 @@ import { createState, noDispatch, StateComponent } from './src'
 const rows = [
   {
     name: "nax",
-    email: "nax@gamil.com",
-    age: 20
+    email: "nax1@gamil.com",
+    age: 10
+  },
+  {
+    name: "nax",
+    email: "nax2@gamil.com",
+    age: 10
+  },
+  {
+    name: "nax",
+    email: "nax3@gamil.com",
+    age: 3
+  },
+  {
+    name: "nax",
+    email: "nax4@gamil.com",
+    age: 4
   },
   {
     name: "najrul",
@@ -30,16 +45,19 @@ type Row = {
 const store = createState<Row, {}>()
 store.createMany(rows)
 
+store.create({
+  name: "Naxrul",
+  email: "naxrul@gmail.com",
+  age: 20
+})
+
 class A extends StateComponent {
 
   render() {
-    const items: any = store.find({
-      name: {
-        contain: "nax"
-      }
+    const all = store.getAll({
+      skip: 3,
+      take: 2
     })
-
-    const all = store.getAll()
     console.log(all);
 
 
@@ -47,7 +65,7 @@ class A extends StateComponent {
       <div>
         {all.map((item, idx: any) => {
           return (
-            <li key={idx}>{item.name} - {item._index}</li>
+            <li key={idx}>{item.email} - {item._index}</li>
           )
         })}
       </div>
@@ -65,7 +83,9 @@ const App = () => {
         onClick={() => {
           noDispatch(() => {
             store.create({
-              name: Math.random().toString()
+              name: Math.random().toString(),
+              email: "",
+              age: 20
             })
           })
         }}
@@ -73,7 +93,9 @@ const App = () => {
       <button
         onClick={() => {
           store.create({
-            name: Math.random().toString()
+            name: Math.random().toString(),
+            email: "",
+            age: 20
           })
         }}
       >View</button>
