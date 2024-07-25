@@ -1,4 +1,3 @@
-import { FinderArgsType, QueryType } from "./Finder";
 export type StateDataType = "state" | "meta"
 
 export type RowPredefinedFields = {
@@ -29,4 +28,25 @@ export interface IStateHandler<Row, MetaProps> {
     getAllMeta(): MetaProps;
     deleteMeta<T extends keyof MetaProps>(key: T): void;
     clearMeta(): void;
+}
+
+
+export type QueryValueType = {
+    contain?: string | number;
+    startWith?: string | number;
+    endWith?: string | number;
+    gt?: number;
+    lt?: number;
+    gte?: number;
+    lte?: number;
+}
+
+export type QueryType<Row = {}> = {
+    [key in keyof Row]?: string | number | null | undefined | QueryValueType
+}
+
+export type FinderArgsType<Row> = {
+    getRow?: (row: Row, index: number) => Row | void;
+    skip?: number;
+    take?: number;
 }

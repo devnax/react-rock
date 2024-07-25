@@ -1,78 +1,27 @@
+import { FinderArgsType, QueryType, QueryValueType } from "./types"
 
-
-export type QueryValueType = {
-    contain?: string | number;
-    startWith?: string | number;
-    endWith?: string | number;
-    gt?: number;
-    lt?: number;
-    gte?: number;
-    lte?: number;
+export const isOb = (ob: any) => typeof ob === "object" && !Array.isArray(ob) && ob !== null
+const isNum = (n: any) => typeof n === 'number'
+const excuteQuery: any = {
+    contain: (v: any, qv: any) => typeof v === 'string' && v.search(qv) !== -1,
+    startWith: (v: any, qv: any) => typeof v === 'string' && v.startsWith(qv),
+    endWith: (v: any, qv: any) => typeof v === 'string' && v.endsWith(qv),
+    lt: (v: any, qv: any) => isNum(v) && v < qv,
+    gt: (v: any, qv: any) => isNum(v) && v > qv,
+    lte: (v: any, qv: any) => isNum(v) && v <= qv,
+    gte: (v: any, qv: any) => isNum(v) && v >= qv,
 }
 
-export type QueryType<Row = {}> = {
-    [key in keyof Row]?: string | number | null | undefined | QueryValueType
-}
-
-export type FinderArgsType<Row> = {
-    getRow?: (row: Row, index: number) => Row | void;
-    skip?: number;
-    take?: number;
-}
-
-const isOb = (ob: any) => typeof ob === "object" && !Array.isArray(ob) && ob !== null
-
-const isInQuery = <Row>(rowVlaue: Row, queryObject: QueryValueType) => {
+const isInQuery = <Row>(rowVal: Row, queryObject: QueryValueType) => {
     let match = true
     for (let queryKey in queryObject) {
-        let queryVal = (queryObject as any)[queryKey]
-
-        switch (queryKey) {
-            case "contain":
-                if (!(typeof rowVlaue === 'string' && rowVlaue.search(queryVal) !== -1)) {
-                    match = false;
-                    break;
-                }
-                break;
-            case "startWith":
-                if (!(typeof rowVlaue === 'string' && rowVlaue.startsWith(queryVal))) {
-                    match = false;
-                    break;
-                }
-                break;
-            case "endWith":
-                if (!(typeof rowVlaue === 'string' && rowVlaue.endsWith(queryVal))) {
-                    match = false;
-                    break;
-                }
-                break;
-            case "lt":
-                if (!(typeof rowVlaue === 'number' && rowVlaue < queryVal)) {
-                    match = false;
-                    break;
-                }
-                break;
-            case "gt":
-                if (!(typeof rowVlaue === 'number' && rowVlaue > queryVal)) {
-                    match = false;
-                    break;
-                }
-                break;
-            case "lte":
-                if (!(typeof rowVlaue === 'number' && rowVlaue <= queryVal)) {
-                    match = false;
-                    break;
-                }
-                break;
-            case "gte":
-                if (!(typeof rowVlaue === 'number' && rowVlaue >= queryVal)) {
-                    match = false;
-                    break;
-                }
-                break;
+        let qVal = (queryObject as any)[queryKey]
+        const qcb = excuteQuery[qVal]
+        if (qcb && !qcb(rowVal, qVal)) {
+            match = false;
+            break;
         }
     }
-
     return match
 }
 

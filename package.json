@@ -1,5 +1,5 @@
 {
-  "version": "3.0.2",
+  "version": "3.0.3",
   "name": "react-rock",
   "author": "Naxrul Ahmed",
   "module": "dist/index.js",

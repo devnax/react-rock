@@ -1,48 +1,69 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+"use client"
+import { useEffect, useId, useMemo, useState, createElement, Fragment, Component } from 'react'
 import { ArgsType, IStateHandler, RowType, StateDataType, WhereType } from './types';
-import Finder from './Finder';
+import Finder, { isOb } from './Finder';
 export * from './types'
-export * from './StateComponent'
 
-const _row = <R,>(row: Partial<RowType<R>>): RowType<R> => {
-    return {
-        ...row,
-        _id: row._id || _uid(),
-        _observe: row._observe || _random()
-    } as any
+export class StateComponent<P = {}, S = {}, SS = any> extends Component<P, S, SS> {
+    constructor(props: P) {
+        super(props)
+        const R = this.render.bind(this) as any
+        this.render = () => createElement(Fragment, null, createElement(R, null))
+    }
 }
 
 const _random = () => Date.now() + Math.floor(1000 + Math.random() * 9000)
 const _uid = () => _random().toString(32).replace("-", "").substring(0, 15)
+const _row = <R>(row: Partial<RowType<R>>): RowType<R> => {
+    if (!isOb(row)) throw new Error(`State row must be an object. given ${typeof row}: ${row}`);
+    return { ...row, _id: row._id || _uid(), _observe: row._observe || _random() } as any
+}
 
-let activeDispatch = true
+let doDispatch = true
 export const noDispatch = (cb: Function) => {
-    activeDispatch = false
+    doDispatch = false
     cb()
-    activeDispatch = true
+    doDispatch = true
 }
 
 export const createState = <Row extends object, MetaProps extends object = {}>() => {
-    let DATA: RowType<Row>[] = []
-    let META = new Map<keyof MetaProps, any>()
-    const STATE_INFO = {
-        dispatches: new Map<string, { type: StateDataType, cb: Function }>(),
-        observe: 0,
-        meta_observe: 0
+
+    const factory = {
+        data: {
+            state: [] as RowType<Row>[],
+            meta: new Map<keyof MetaProps, any>()
+        },
+        dispatches: {
+            state: new Map<string, Function>(),
+            meta: new Map<string, Function>()
+        },
+        observe: {
+            state: Math.random(),
+            meta: Math.random()
+        }
     }
 
     const _dispatch = (type: StateDataType) => {
-        STATE_INFO[type == "meta" ? "meta_observe" : "observe"] = Math.random()
-        activeDispatch && STATE_INFO.dispatches.forEach(d => d.type === type && d.cb())
+        factory.observe[type] = Math.random()
+
+        if (doDispatch) {
+            factory.dispatches[type].forEach((cb, key) => {
+                try {
+                    cb()
+                } catch (_err) {
+                    factory.dispatches[type].delete(key)
+                }
+            })
+        }
     }
 
     const useHook = (type: StateDataType) => {
         const id = useId()
         const [, dispatch] = useState(0)
         useEffect(() => {
-            STATE_INFO.dispatches.set(id, { type, cb: () => dispatch(Math.random()) })
+            factory.dispatches[type].set(id, () => dispatch(Math.random()))
             return () => {
-                STATE_INFO.dispatches.delete(id)
+                factory.dispatches[type].delete(id)
             }
         }, [])
     }
@@ -51,65 +72,68 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
 
         static create(row: Row): RowType<Row> {
             const r = _row<Row>(row as any)
-            DATA.push(r)
+            factory.data.state.push(r)
             _dispatch("state")
             return r
         }
 
-        static createMany(rows: Row[]) {
+        static createMany(rows: Row[]): RowType<Row>[] {
+            const rs = []
             for (let row of rows) {
                 const r = _row<Row>(row)
-                DATA.push(r)
+                factory.data.state.push(r)
+                rs.push(r)
             }
             _dispatch("state")
+            return rs
         }
 
         static update(row: Partial<Row>, where: WhereType<Row>, args?: ArgsType<Row>) {
-            Finder(DATA, where, {
+            Finder(factory.data.state, where, {
                 ...args,
                 getRow: (r, index) => {
                     args?.getRow && args.getRow(r, index)
-                    DATA[index] = _row<Row>({ ...r, ...row })
+                    factory.data.state[index] = _row<Row>({ ...r, ...row })
                 }
             })
             _dispatch("state")
         }
 
         static updateAll(row: Partial<Row>) {
-            for (let i = 0; i < DATA.length; i++) {
-                DATA[i] = _row<Row>({ ...DATA[i], ...row })
+            for (let i = 0; i < factory.data.state.length; i++) {
+                factory.data.state[i] = _row<Row>({ ...factory.data.state[i], ...row })
             }
             _dispatch("state")
         }
 
         static delete(where: WhereType<Row>, args?: ArgsType<Row>) {
-            const found = Finder(DATA, where, args)
+            const found = Finder(factory.data.state, where, args)
             for (let index of found.indexes) {
-                DATA.splice(index, 1)
+                factory.data.state.splice(index, 1)
             }
             _dispatch("state")
         }
 
         static clearState() {
-            DATA = []
+            factory.data.state = []
             _dispatch("state")
         }
 
         static getAll(args?: ArgsType<Row>) {
             try {
                 useHook("state")
-                return useMemo(() => Finder(DATA, null, args).rows, [STATE_INFO.observe])
+                return useMemo(() => Finder(factory.data.state, null, args).rows, [factory.observe.state])
             } catch (error) {
-                return Finder(DATA, null, args)
+                return Finder(factory.data.state, null, args)
             }
         }
 
         static find(where: WhereType<Row>, args?: ArgsType<Row>): RowType<Row>[] {
             try {
                 useHook("state")
-                return useMemo(() => Finder(DATA, where, args).rows, [STATE_INFO.observe])
+                return useMemo(() => Finder(factory.data.state, where, args).rows, [factory.observe.state])
             } catch (error) {
-                return Finder(DATA, where, args).rows
+                return Finder(factory.data.state, where, args).rows
             }
         }
 
@@ -122,44 +146,44 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
         }
 
         static move(oldIdx: number, newIdx: number) {
-            const row: any = DATA[oldIdx]
+            const row: any = factory.data.state[oldIdx]
             if (row) {
-                DATA.splice(oldIdx, 1)
-                DATA.splice(newIdx, 0, _row(row))
+                factory.data.state.splice(oldIdx, 1)
+                factory.data.state.splice(newIdx, 0, _row(row))
                 _dispatch("state")
             }
         }
 
         static setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T]) {
-            META.set(key, value)
+            factory.data.meta.set(key, value)
             _dispatch("meta")
         }
 
         static getMeta<T extends keyof MetaProps>(key: T, def?: any): MetaProps[T] {
             try {
                 useHook("meta")
-                return META.get(key) || def
+                return factory.data.meta.get(key) || def
             } catch (error) {
-                return META.get(key) || def
+                return factory.data.meta.get(key) || def
             }
         }
 
         static getAllMeta(): MetaProps {
             try {
                 useHook("meta")
-                return useMemo(() => Object.fromEntries(META) as MetaProps, [STATE_INFO.meta_observe])
+                return useMemo(() => Object.fromEntries(factory.data.meta) as MetaProps, [factory.observe.meta])
             } catch (error) {
-                return Object.fromEntries(META) as MetaProps
+                return Object.fromEntries(factory.data.meta) as MetaProps
             }
         }
 
         static deleteMeta<T extends keyof MetaProps>(key: T) {
-            META.delete(key)
+            factory.data.meta.delete(key)
             _dispatch("meta")
         }
 
         static clearMeta() {
-            META.clear()
+            factory.data.meta.clear()
             _dispatch("meta")
         }
     }
