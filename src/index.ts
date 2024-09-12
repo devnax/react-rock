@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useId, useMemo, useState, createElement, Fragment, Component } from 'react'
+import { useEffect, useId, useState, createElement, Fragment, Component } from 'react'
 import { ArgsType, IStateHandler, RowType, StateDataType, WhereType } from './types';
 import Finder, { isOb } from './Finder';
 export * from './types'
@@ -40,7 +40,8 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
         observe: {
             state: Math.random(),
             meta: Math.random()
-        }
+        },
+        cache: new Map<string, RowType<Row>[]>()
     }
 
     const _dispatch = (type: StateDataType) => {
@@ -70,21 +71,25 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
 
     abstract class StateHandler {
 
-        static create(row: Row): RowType<Row> {
+        static create(row: Row, args?: ArgsType<Row>): RowType<Row> {
             const r = _row<Row>(row as any)
             factory.data.state.push(r)
-            _dispatch("state")
+            if (!args?.noDispatch) {
+                _dispatch("state")
+            }
             return r
         }
 
-        static createMany(rows: Row[]): RowType<Row>[] {
+        static createMany(rows: Row[], args?: ArgsType<Row>): RowType<Row>[] {
             const rs = []
             for (let row of rows) {
                 const r = _row<Row>(row)
                 factory.data.state.push(r)
                 rs.push(r)
             }
-            _dispatch("state")
+            if (!args?.noDispatch) {
+                _dispatch("state")
+            }
             return rs
         }
 
@@ -96,20 +101,28 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
                     factory.data.state[index] = _row<Row>({ ...r, ...row })
                 }
             })
-            _dispatch("state")
+
+            if (!args?.noDispatch) {
+                _dispatch("state")
+            }
         }
 
-        static updateAll(row: Partial<Row>) {
+        static updateAll(row: Partial<Row>, args?: ArgsType<Row>) {
             for (let i = 0; i < factory.data.state.length; i++) {
                 factory.data.state[i] = _row<Row>({ ...factory.data.state[i], ...row })
             }
-            _dispatch("state")
+            if (!args?.noDispatch) {
+                _dispatch("state")
+            }
         }
 
         static delete(where: WhereType<Row>, args?: ArgsType<Row>) {
             const found = Finder(factory.data.state, where, args)
             factory.data.state = factory.data.state.filter((row) => !found.ids.includes(row._id))
-            _dispatch("state")
+
+            if (!args?.noDispatch) {
+                _dispatch("state")
+            }
         }
 
         static clearAll() {
@@ -119,8 +132,17 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
 
         static getAll(args?: ArgsType<Row>) {
             try {
-                useHook("state")
-                return useMemo(() => Finder(factory.data.state, null, args).rows, [factory.observe.state])
+                if (!args?.noDispatch) {
+                    useHook("state")
+                }
+                const cacheKey = factory.observe.state.toString() + (args?.skip || "") + (args?.take || "")
+                const items = factory.cache.get(cacheKey)
+                if (items?.length) {
+                    return items
+                }
+                const rows = Finder(factory.data.state, null, args).rows
+                factory.cache.set(cacheKey, rows)
+                return rows
             } catch (error) {
                 return Finder(factory.data.state, null, args)
             }
@@ -128,8 +150,18 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
 
         static find(where: WhereType<Row>, args?: ArgsType<Row>): RowType<Row>[] {
             try {
-                useHook("state")
-                return useMemo(() => Finder(factory.data.state, where, args).rows, [factory.observe.state])
+
+                if (!args?.noDispatch) {
+                    useHook("state")
+                }
+                const cacheKey = factory.observe.state.toString() + (args?.skip || "") + (args?.take || "") + JSON.stringify(where)
+                const items = factory.cache.get(cacheKey)
+                if (items?.length) {
+                    return items
+                }
+                const rows = Finder(factory.data.state, where, args).rows
+                factory.cache.set(cacheKey, rows)
+                return rows
             } catch (error) {
                 return Finder(factory.data.state, where, args).rows
             }
@@ -169,7 +201,7 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
         static getAllMeta(): MetaProps {
             try {
                 useHook("meta")
-                return useMemo(() => Object.fromEntries(factory.data.meta) as MetaProps, [factory.observe.meta])
+                return Object.fromEntries(factory.data.meta) as MetaProps
             } catch (error) {
                 return Object.fromEntries(factory.data.meta) as MetaProps
             }

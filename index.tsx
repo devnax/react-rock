@@ -5,22 +5,22 @@ import { createState, noDispatch, StateComponent } from './src'
 const rows = [
   {
     name: "nax",
+    email: "nax@gamil.com",
+    age: 10
+  },
+  {
+    name: "nax",
+    email: "nax@gamil.com",
+    age: 10
+  },
+  {
+    name: "nax",
     email: "nax1@gamil.com",
-    age: 10
-  },
-  {
-    name: "nax",
-    email: "nax2@gamil.com",
-    age: 10
-  },
-  {
-    name: "nax",
-    email: "nax3@gamil.com",
     age: 3
   },
   {
     name: "nax",
-    email: "nax4@gamil.com",
+    email: "nax1@gamil.com",
     age: 4
   },
   {
@@ -50,21 +50,25 @@ store.create({
   age: 20
 })
 
-class A extends StateComponent {
+function A() {
+  const [email, setEmail] = React.useState("nax@gamil.com")
+  const all = store.getAll()
 
-  render() {
-    const all = store.getAll()
-
-    return (
-      <div>
-        {all.map((item, idx: any) => {
-          return (
-            <li key={idx}>{item.email} - {item.name}</li>
-          )
-        })}
-      </div>
-    )
-  }
+  return (
+    <div>
+      {all.map((item, idx: any) => {
+        const sub = store.find({ email }, { noDispatch: true })
+        return (
+          <li key={idx}>{item.email} - {item.name}</li>
+        )
+      })}
+      <button
+        onClick={() => {
+          setEmail("nax1@gamil.com")
+        }}
+      >Set Email</button>
+    </div>
+  )
 }
 
 

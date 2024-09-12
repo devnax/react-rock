@@ -49,4 +49,5 @@ export type FinderArgsType<Row> = {
     getRow?: (row: Row, index: number) => Row | void;
     skip?: number;
     take?: number;
+    noDispatch?: boolean;
 }
