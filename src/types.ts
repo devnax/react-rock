@@ -17,7 +17,7 @@ export interface IStateHandler<Row, MetaProps> {
     update(row: Partial<Row>, where: WhereType<Row>, args?: ArgsType<Row>): void;
     updateAll(row: Partial<Row>): void;
     delete(where: WhereType<Row>, args?: ArgsType<Row>): void;
-    clearState(): void;
+    clearAll(): void;
     getAll(args?: ArgsType<Row>): RowType<Row>[];
     find(where: WhereType<Row>, args?: ArgsType<Row>): RowType<Row>[];
     findFirst(where: WhereType<Row>): RowType<Row>;

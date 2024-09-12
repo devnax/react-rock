@@ -35,7 +35,6 @@ const rows = [
   }
 ]
 
-
 type Row = {
   name: string;
   email: string;
@@ -54,18 +53,13 @@ store.create({
 class A extends StateComponent {
 
   render() {
-    const all = store.getAll({
-      skip: 3,
-      take: 2
-    })
-    console.log(all);
-
+    const all = store.getAll()
 
     return (
       <div>
         {all.map((item, idx: any) => {
           return (
-            <li key={idx}>{item.email} - {item._index}</li>
+            <li key={idx}>{item.email} - {item.name}</li>
           )
         })}
       </div>
@@ -99,6 +93,11 @@ const App = () => {
           })
         }}
       >View</button>
+      <button
+        onClick={() => {
+          store.delete({ name: "nax" })
+        }}
+      >Delete</button>
     </div>
   );
 };

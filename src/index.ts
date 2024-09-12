@@ -108,13 +108,11 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
 
         static delete(where: WhereType<Row>, args?: ArgsType<Row>) {
             const found = Finder(factory.data.state, where, args)
-            for (let index of found.indexes) {
-                factory.data.state.splice(index, 1)
-            }
+            factory.data.state = factory.data.state.filter((row) => !found.ids.includes(row._id))
             _dispatch("state")
         }
 
-        static clearState() {
+        static clearAll() {
             factory.data.state = []
             _dispatch("state")
         }

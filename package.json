@@ -1,8 +1,7 @@
 {
-  "version": "3.0.3",
+  "version": "3.0.4",
   "name": "react-rock",
   "author": "Naxrul Ahmed",
-  "module": "dist/index.js",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",

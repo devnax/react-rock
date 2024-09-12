@@ -28,6 +28,7 @@ const isInQuery = <Row>(rowVal: Row, queryObject: QueryValueType) => {
 const Finder = <Row extends object>(rows: Row[], query: null | QueryType<Row>, args?: FinderArgsType<Row>) => {
     let result: Row[] = []
     let indexes: number[] = []
+    let ids: string[] = []
 
     for (let i = 0; i < rows.length; i++) {
         let row = rows[i]
@@ -66,6 +67,7 @@ const Finder = <Row extends object>(rows: Row[], query: null | QueryType<Row>, a
             }
             result.push({ ...row, _index: i })
             indexes.push(i)
+            ids.push((row as any)._id)
         }
     }
 
@@ -80,7 +82,7 @@ const Finder = <Row extends object>(rows: Row[], query: null | QueryType<Row>, a
         result = result.splice(args.skip)
     }
 
-    return { rows: result, indexes }
+    return { rows: result, indexes, ids }
 }
 
 export default Finder
