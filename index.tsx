@@ -57,7 +57,9 @@ function A() {
   return (
     <div>
       {all.map((item, idx: any) => {
-        const sub = store.find({ email }, { noDispatch: true })
+        const sub = store.find({ email: item.email }, { detect: false })
+        console.log(sub);
+
         return (
           <li key={idx}>{item.email} - {item.name}</li>
         )

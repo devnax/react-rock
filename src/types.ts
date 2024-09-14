@@ -6,28 +6,37 @@ export type RowPredefinedFields = {
     _observe: number;
 }
 
+export type FinderArgsType<Row> = {
+    getRow?: (row: Row, index: number) => Row | void;
+    skip?: number;
+    take?: number;
+    detect?: boolean;
+}
+
 export type RowType<Row> = Row & RowPredefinedFields
 export type WhereType<Row> = QueryType<RowType<Row>>
 export type ArgsType<Row> = FinderArgsType<RowType<Row>>
-
+export type GetRowCallback<Row> = (row: Row, index: number) => Row | void;
 
 export interface IStateHandler<Row, MetaProps> {
-    create(row: Row): RowType<Row>;
-    createMany(rows: Row[]): void;
-    update(row: Partial<Row>, where: WhereType<Row>, args?: ArgsType<Row>): void;
-    updateAll(row: Partial<Row>): void;
-    delete(where: WhereType<Row>, args?: ArgsType<Row>): void;
-    clearAll(): void;
-    getAll(args?: ArgsType<Row>): RowType<Row>[];
+    create(row: Row, dispatch?: boolean): RowType<Row>;
+    createMany(rows: Row[], dispatch?: boolean): void;
+    update(row: Partial<Row>, where: WhereType<Row>, dispatch?: boolean): void;
+    updateAll(row: Partial<Row>, dispatch?: boolean): void;
+    delete(where: WhereType<Row>, dispatch?: boolean): void;
+    clearAll(dispatch?: boolean): void;
+    move(oldIdx: number, newIdx: number, dispatch?: boolean): void;
+
+    getAll(args?: { detect?: boolean; getRow?: GetRowCallback<Row> }): RowType<Row>[];
     find(where: WhereType<Row>, args?: ArgsType<Row>): RowType<Row>[];
-    findFirst(where: WhereType<Row>): RowType<Row>;
-    findById(_id: string): RowType<Row>;
-    move(oldIdx: number, newIdx: number): void;
-    setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T]): void;
-    getMeta<T extends keyof MetaProps>(key: T, def?: any): MetaProps[T];
-    getAllMeta(): MetaProps;
-    deleteMeta<T extends keyof MetaProps>(key: T): void;
-    clearMeta(): void;
+    findFirst(where: WhereType<Row>, detect?: boolean): RowType<Row>;
+    findById(_id: string, detect?: boolean): RowType<Row>;
+
+    setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T], dispatch?: boolean): void;
+    getMeta<T extends keyof MetaProps>(key: T, detect?: boolean): MetaProps[T];
+    getAllMeta(detect?: boolean): MetaProps;
+    deleteMeta<T extends keyof MetaProps>(key: T, dispatch?: boolean): void;
+    clearMeta(dispatch?: boolean): void;
 }
 
 
@@ -43,11 +52,4 @@ export type QueryValueType = {
 
 export type QueryType<Row = {}> = {
     [key in keyof Row]?: string | number | null | undefined | QueryValueType
-}
-
-export type FinderArgsType<Row> = {
-    getRow?: (row: Row, index: number) => Row | void;
-    skip?: number;
-    take?: number;
-    noDispatch?: boolean;
 }
