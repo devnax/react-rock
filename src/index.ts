@@ -19,13 +19,6 @@ const _row = <R>(row: Partial<RowType<R>>): RowType<R> => {
     return { ...row, _id: row._id || _uid(), _observe: row._observe || _random() } as any
 }
 
-let doDispatch = true
-export const noDispatch = (cb: Function) => {
-    doDispatch = false
-    cb()
-    doDispatch = true
-}
-
 export const createState = <Row extends object, MetaProps extends object = {}>() => {
 
     const factory = {
@@ -44,18 +37,15 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
         cache: new Map<string, RowType<Row>[]>()
     }
 
-    const _dispatch = (type: StateDataType) => {
+    const fire = (type: StateDataType) => {
         factory.observe[type] = Math.random()
-
-        if (doDispatch) {
-            factory.dispatches[type].forEach((cb, key) => {
-                try {
-                    cb()
-                } catch (_err) {
-                    factory.dispatches[type].delete(key)
-                }
-            })
-        }
+        factory.dispatches[type].forEach((cb, key) => {
+            try {
+                cb()
+            } catch (_err) {
+                factory.dispatches[type].delete(key)
+            }
+        })
     }
 
     const useHook = (type: StateDataType) => {
@@ -71,18 +61,16 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
 
     abstract class StateHandler {
 
-        static create(row: Row, dispatch?: boolean): RowType<Row> {
-            dispatch ??= true
+        static create(row: Row, freeze?: boolean): RowType<Row> {
             const r = _row<Row>(row as any)
             factory.data.state.push(r)
-            if (dispatch) {
-                _dispatch("state")
+            if (!freeze) {
+                fire("state")
             }
             return r
         }
 
-        static createMany(rows: Row[], dispatch?: boolean): RowType<Row>[] {
-            dispatch ??= true
+        static createMany(rows: Row[], freeze?: boolean): RowType<Row>[] {
 
             const rs = []
             for (let row of rows) {
@@ -90,68 +78,62 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
                 factory.data.state.push(r)
                 rs.push(r)
             }
-            if (dispatch) {
-                _dispatch("state")
+            if (!freeze) {
+                fire("state")
             }
             return rs
         }
 
-        static update(row: Partial<Row>, where: WhereType<Row>, dispatch?: boolean) {
-            dispatch ??= true
+        static update(row: Partial<Row>, where: WhereType<Row>, freeze?: boolean) {
             Finder(factory.data.state, where, {
                 getRow: (r, index) => {
                     factory.data.state[index] = _row<Row>({ ...r, ...row })
                 }
             })
 
-            if (dispatch) {
-                _dispatch("state")
+            if (!freeze) {
+                fire("state")
             }
         }
 
-        static updateAll(row: Partial<Row>, dispatch?: boolean) {
-            dispatch ??= true
+        static updateAll(row: Partial<Row>, freeze?: boolean) {
 
             for (let i = 0; i < factory.data.state.length; i++) {
                 factory.data.state[i] = _row<Row>({ ...factory.data.state[i], ...row })
             }
-            if (dispatch) {
-                _dispatch("state")
+            if (!freeze) {
+                fire("state")
             }
         }
 
-        static delete(where: WhereType<Row>, dispatch?: boolean) {
-            dispatch ??= true
+        static delete(where: WhereType<Row>, freeze?: boolean) {
             const found = Finder(factory.data.state, where)
             factory.data.state = factory.data.state.filter((row) => !found.ids.includes(row._id))
 
-            if (dispatch) {
-                _dispatch("state")
+            if (!freeze) {
+                fire("state")
             }
         }
-        static move(oldIdx: number, newIdx: number, dispatch?: boolean) {
-            dispatch ??= true
+        static move(oldIdx: number, newIdx: number, freeze?: boolean) {
             const row: any = factory.data.state[oldIdx]
             if (row) {
                 factory.data.state.splice(oldIdx, 1)
                 factory.data.state.splice(newIdx, 0, _row(row))
-                if (dispatch) {
-                    _dispatch("state")
+                if (!freeze) {
+                    fire("state")
                 }
             }
         }
-        static clearAll(dispatch?: boolean) {
-            dispatch ??= true
+        static clearAll(freeze?: boolean) {
             factory.data.state = []
-            if (dispatch) {
-                _dispatch("state")
+            if (!freeze) {
+                fire("state")
             }
         }
 
         static getAll(args?: ArgsType<Row>) {
             try {
-                let detect = args?.detect ?? true
-                if (detect) {
+                if (!args?.freeze) {
                     useHook("state")
                 }
                 const cacheKey = factory.observe.state.toString() + (args?.skip || "") + (args?.take || "")
@@ -169,8 +151,7 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
 
         static find(where: WhereType<Row>, args?: ArgsType<Row>): RowType<Row>[] {
             try {
-                let detect = args?.detect ?? true
-                if (detect) {
+                if (!args?.freeze) {
                     useHook("state")
                 }
                 const cacheKey = factory.observe.state.toString() + (args?.skip || "") + (args?.take || "") + JSON.stringify(where)
@@ -186,26 +167,24 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
             }
         }
 
-        static findFirst(where: WhereType<Row>, detect?: boolean) {
-            return StateHandler.find(where, { detect })[0]
+        static findFirst(where: WhereType<Row>, freeze?: boolean) {
+            return StateHandler.find(where, { freeze })[0]
         }
 
-        static findById(_id: string, detect?: boolean) {
-            return StateHandler.findFirst({ _id }, detect)
+        static findById(_id: string, freeze?: boolean) {
+            return StateHandler.findFirst({ _id }, freeze)
         }
 
-        static setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T], dispatch?: boolean) {
+        static setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T], freeze?: boolean) {
             factory.data.meta.set(key, value)
-            dispatch ??= true
-            if (dispatch) {
-                _dispatch("meta")
+            if (!freeze) {
+                fire("meta")
             }
         }
 
-        static getMeta<T extends keyof MetaProps>(key: T, detect?: boolean): MetaProps[T] {
+        static getMeta<T extends keyof MetaProps>(key: T, freeze?: boolean): MetaProps[T] {
             try {
-                detect ??= true
-                if (detect) {
+                if (!freeze) {
                     useHook("meta")
                 }
                 return factory.data.meta.get(key)
@@ -214,10 +193,9 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
             }
         }
 
-        static getAllMeta(detect?: boolean): MetaProps {
-            detect ??= true
+        static getAllMeta(freeze?: boolean): MetaProps {
             try {
-                if (detect) {
+                if (!freeze) {
                     useHook("meta")
                 }
                 return Object.fromEntries(factory.data.meta) as MetaProps
@@ -226,19 +204,17 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
             }
         }
 
-        static deleteMeta<T extends keyof MetaProps>(key: T, dispatch?: boolean) {
+        static deleteMeta<T extends keyof MetaProps>(key: T, freeze?: boolean) {
             factory.data.meta.delete(key)
-            dispatch ??= true
-            if (dispatch) {
-                _dispatch("meta")
+            if (!freeze) {
+                fire("meta")
             }
         }
 
-        static clearMeta(dispatch?: boolean) {
+        static clearMeta(freeze?: boolean) {
             factory.data.meta.clear()
-            dispatch ??= true
-            if (dispatch) {
-                _dispatch("meta")
+            if (!freeze) {
+                fire("meta")
             }
         }
     }
