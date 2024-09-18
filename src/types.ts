@@ -41,9 +41,11 @@ export interface IStateHandler<Row, MetaProps> {
 
 
 export type QueryValueType = {
-    contain?: string | number;
+    contain?: string | number | boolean | null | undefined;
     startWith?: string | number;
     endWith?: string | number;
+    equalWith?: string | number | boolean | null | undefined;
+    notEqualWith?: string | number | boolean | null | undefined;
     gt?: number;
     lt?: number;
     gte?: number;
