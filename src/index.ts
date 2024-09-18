@@ -157,7 +157,7 @@ export const createState = <Row extends object, MetaProps extends object = {}>()
                 const cacheKey = factory.observe.state.toString() + (args?.skip || "") + (args?.take || "") + JSON.stringify(where)
                 const items = factory.cache.get(cacheKey)
                 if (items?.length) {
-                    return items
+                    // return items
                 }
                 const rows = Finder(factory.data.state, where, args).rows
                 factory.cache.set(cacheKey, rows)

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { createState, noDispatch, StateComponent } from './src'
+import { createState } from './src'
 
 const rows = [
   {
@@ -52,13 +52,15 @@ store.create({
 
 function A() {
   const [email, setEmail] = React.useState("nax@gamil.com")
-  const all = store.getAll()
+  const all = store.find({
+    email: {
+      startWith: "nax1"
+    }
+  })
 
   return (
     <div>
       {all.map((item, idx: any) => {
-        const sub = store.find({ email: item.email }, { detect: false })
-        console.log(sub);
 
         return (
           <li key={idx}>{item.email} - {item.name}</li>
@@ -81,12 +83,10 @@ const App = () => {
       <A />
       <button
         onClick={() => {
-          noDispatch(() => {
-            store.create({
-              name: Math.random().toString(),
-              email: "",
-              age: 20
-            })
+          store.create({
+            name: Math.random().toString(),
+            email: "",
+            age: 20
           })
         }}
       >Add+</button>

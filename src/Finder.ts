@@ -16,7 +16,7 @@ const isInQuery = <Row>(rowVal: Row, queryObject: QueryValueType) => {
     let match = true
     for (let queryKey in queryObject) {
         let qVal = (queryObject as any)[queryKey]
-        const qcb = excuteQuery[qVal]
+        const qcb = excuteQuery[queryKey]
         if (qcb && !qcb(rowVal, qVal)) {
             match = false;
             break;
