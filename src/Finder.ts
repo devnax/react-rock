@@ -6,6 +6,8 @@ const excuteQuery: any = {
     contain: (v: any, qv: any) => typeof v === 'string' && v.search(qv) !== -1,
     startWith: (v: any, qv: any) => typeof v === 'string' && v.startsWith(qv),
     endWith: (v: any, qv: any) => typeof v === 'string' && v.endsWith(qv),
+    equalWith: (v: any, qv: any) => v === qv,
+    notEqualWith: (v: any, qv: any) => v !== qv,
     lt: (v: any, qv: any) => isNum(v) && v < qv,
     gt: (v: any, qv: any) => isNum(v) && v > qv,
     lte: (v: any, qv: any) => isNum(v) && v <= qv,
