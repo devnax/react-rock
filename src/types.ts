@@ -51,5 +51,5 @@ export type QueryValueType = {
 }
 
 export type QueryType<Row = {}> = {
-    [key in keyof Row]?: string | number | null | undefined | QueryValueType
+    [key in keyof Row]?: string | number | boolean | null | undefined | QueryValueType
 }
