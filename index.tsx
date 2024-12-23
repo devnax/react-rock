@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { createState } from './src'
+import { createStore } from './src'
 
 const rows = [
   {
@@ -41,7 +41,7 @@ type Row = {
   age: number;
 }
 
-const store = createState<Row, {}>()
+const store = createStore<Row, {}>()
 store.createMany(rows)
 
 store.create({

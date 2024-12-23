@@ -19,7 +19,7 @@ const _row = <R>(row: Partial<RowType<R>>): RowType<R> => {
     return { ...row, _id: row._id || _uid(), _observe: row._observe || _random() } as any
 }
 
-export const createState = <Row extends object, MetaProps extends object = {}>() => {
+export const createStore = <Row extends object, MetaProps extends object = {}>() => {
 
     const factory = {
         data: {
