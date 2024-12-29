@@ -4,7 +4,7 @@ import { ArgsType, IStateHandler, RowType, StateDataType, WhereType } from './ty
 import Finder, { isOb } from './Finder';
 export * from './types'
 
-export class StateComponent<P = {}, S = {}, SS = any> extends Component<P, S, SS> {
+export class StoreComponent<P = {}, S = {}, SS = any> extends Component<P, S, SS> {
     constructor(props: P) {
         super(props)
         const R = this.render.bind(this) as any
@@ -19,7 +19,7 @@ const _row = <R>(row: Partial<RowType<R>>): RowType<R> => {
     return { ...row, _id: row._id || _uid(), _observe: row._observe || _random() } as any
 }
 
-export const createStore = <Row extends object, MetaProps extends object = {}>() => {
+export const createStore = <Row extends object, MetaProps extends object = {}>(rows: Row[], meta: MetaProps) => {
 
     const factory = {
         data: {
@@ -57,6 +57,13 @@ export const createStore = <Row extends object, MetaProps extends object = {}>()
                 factory.dispatches[type].delete(id)
             }
         }, [])
+    }
+
+    for (let row of rows) {
+        factory.data.state.push(_row(row))
+    }
+    for (let key in meta) {
+        factory.data.meta.set(key, meta[key])
     }
 
     abstract class StateHandler {

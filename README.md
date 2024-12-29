@@ -1,195 +1,226 @@
-# React Rock Documentation
+# React-Rock Documentation
 
-**React Rock** is a lightweight state management library designed for React applications. It simplifies state handling with a straightforward API, allowing developers to efficiently manage complex states.
+React-Rock is a lightweight package for managing global state in React applications. It simplifies handling data by providing a store with rows and metadata, while offering methods to perform CRUD operations and more. It enables easy integration with React components, making it an ideal solution for managing complex state in large applications.
 
-- **NPM**: [react-rock](https://www.npmjs.com/package/react-rock)
-- **GitHub**: [React Rock Repository](https://github.com/devnax/react-rock)
-
----
 
 ## Installation
 
-To get started, install React Rock via npm:
+To install the React-Rock package, run the following command in your project:
 
 ```bash
 npm install react-rock
 ```
 
-## Core Concept
+## Features
 
-The core of React Rock is the `createStore` function. It enables developers to manage application state using an intuitive API for creating, updating, deleting, and querying state records.
+- **Global Store Management**: Manage rows and meta data in a global store.
+- **CRUD Operations**: Perform create, read, update, and delete operations on rows.
+- **Meta Management**: Set, get, and delete meta data.
+- **Optimized Re-renders**: Control component re-renders with the `freeze` option.
+- **Class Component Support**: Use the `StoreComponent` for integrating store data into class components.
 
----
+## Basic Example: Creating a Store and Adding Records
 
-## Usage
+To create a new store and add a record, use the `createStore` function. Here's an example:
 
-### Creating a Store
+```typescript
+import { createStore } from 'react-rock';
 
-```tsx
-import { createStore } from "react-rock";
+// Define RowType and MetaType
+type RowType = { name: string, age: number };
+type MetaType = { totalRecords: number };
 
-// Define the shape of your state
-interface Todo {
-  title: string;
-  completed: boolean;
+// Create a store
+const users = createStore<RowType, MetaType>({ name: '', age: 0 }, { totalRecords: 0 });
+
+// Add a new row to the store
+users.create({ name: 'John Doe', age: 30 });
+```
+
+### RowType Explained
+
+When a row is created, it will have the following properties:
+
+```typescript
+type RowType<Row> = Row & {
+    _id: string;       // Unique identifier for the row
+    _index: number;    // Index of the row in the store
+    _observe: number;  // Internal property to track changes
+}
+```
+
+Each row will include the original data (`Row`) and some additional properties like `_id`, `_index`, and `_observe`.
+
+## Methods
+
+Here’s a table with all available methods and their descriptions:
+
+| Method                          | Description                                                                                  |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| `create(row, freeze?)`          | Adds a new record to the store. Optionally, prevents re-rendering if `freeze` is `true`.     |
+| `createMany(rows, freeze?)`     | Adds multiple records to the store. Optionally, prevents re-rendering if `freeze` is `true`. |
+| `update(row, where, freeze?)`   | Updates records based on the condition specified in `where`.                                 |
+| `updateAll(row, freeze?)`       | Updates all records in the store. Optionally, prevents re-rendering if `freeze` is `true`.   |
+| `delete(where, freeze?)`        | Deletes records based on the condition specified in `where`.                                 |
+| `move(oldIdx, newIdx, freeze?)` | Moves a record from one index to another.                                                    |
+| `clearAll(freeze?)`             | Clears all records from the store. Optionally, prevents re-rendering if `freeze` is `true`.  |
+| `getAll(args?)`                 | Retrieves all rows from the store.                                                           |
+| `find(where, args?)`            | Finds rows based on a condition specified in `where`.                                        |
+| `findFirst(where, freeze?)`     | Finds the first row that matches the condition in `where`.                                   |
+| `findById(_id, freeze?)`        | Finds a row by its `_id`.                                                                    |
+| `setMeta(key, value, freeze?)`  | Sets a value for a specific meta key.                                                        |
+| `getMeta(key, freeze?)`         | Retrieves the value of a specific meta key.                                                  |
+| `getAllMeta(freeze?)`           | Retrieves all meta data from the store.                                                      |
+| `deleteMeta(key, freeze?)`      | Deletes a specific meta key.                                                                 |
+| `clearMeta(freeze?)`            | Clears all meta data from the store.                                                         |
+
+### Example of the `find` Method
+
+The `find` method allows you to search for rows in the store based on specific conditions:
+
+```typescript
+const foundUsers = users.find({ name: { equalWith: 'John Doe' } });
+console.log(foundUsers);
+```
+
+
+### Re-rendering in React Components
+
+React-Rock optimizes re-renders by offering a freeze mechanism. When a store update occurs and the `freeze` option is enabled, React components that access the store using methods like `find` or `findFirst` will not automatically re-render. This gives you control over when your components should re-render, improving performance in large applications.
+
+
+## WhereType
+
+The `WhereType` is used to specify conditions when querying rows. It defines a query structure for filtering rows.
+
+### QueryValueType
+
+The `QueryValueType` is used within `WhereType` to define possible conditions for querying:
+
+| Property       | Description                                                       |
+| -------------- | ----------------------------------------------------------------- |
+| `contain`      | Finds values containing the specified string, number, or boolean. |
+| `startWith`    | Finds values that start with the specified string or number.      |
+| `endWith`      | Finds values that end with the specified string or number.        |
+| `equalWith`    | Finds values that are exactly equal to the specified value.       |
+| `notEqualWith` | Finds values that are not equal to the specified value.           |
+| `gt`           | Finds values greater than the specified number.                   |
+| `lt`           | Finds values less than the specified number.                      |
+| `gte`          | Finds values greater than or equal to the specified number.       |
+| `lte`          | Finds values less than or equal to the specified number.          |
+
+### Example of WhereType
+
+```typescript
+const usersOver30 = users.find({ age: { gt: 30 } });
+console.log(usersOver30);
+```
+
+## ArgsType
+
+The `ArgsType` defines options for customizing query behavior, such as selecting specific rows or skipping rows.
+
+| Property | Description                                               |
+| -------- | --------------------------------------------------------- |
+| `getRow` | Custom function to process rows before returning them.    |
+| `skip`   | Number of rows to skip.                                   |
+| `take`   | Number of rows to return.                                 |
+| `freeze` | If `true`, prevents re-rendering when accessing the data. |
+
+## Example with Class Component
+
+To use the store in a class component, extend the `StoreComponent` class:
+
+```typescript
+import { StoreComponent } from 'react-rock';
+
+class UserList extends StoreComponent {
+    render() {
+        const allUsers = users.getAll();
+        return (
+            <div>
+                {allUsers.map(user => <div key={user._id}>{user.name}</div>)}
+            </div>
+        );
+    }
+}
+```
+
+## CRUD Example
+
+```typescript
+// Create a new user
+users.create({ name: 'Alice', age: 25 });
+
+// Update a user
+users.update({ age: 26 }, { name: { equalWith: 'Alice' } });
+
+// Delete a user
+users.delete({ name: { equalWith: 'Alice' } });
+```
+
+## Examples with `find` and Query
+
+```typescript
+// Find users over the age of 25
+const usersOver25 = users.find({ age: { gt: 25 } });
+console.log(usersOver25);
+
+// Find the first user with the name 'Alice'
+const alice = users.findFirst({ name: { equalWith: 'Alice' } });
+console.log(alice);
+```
+
+## Example of Using the Store in Multiple Components
+
+React-Rock allows you to share the same store across multiple components, ensuring a consistent state throughout the app:
+
+```typescript
+import { StoreComponent } from 'react-rock';
+
+class UserList extends StoreComponent {
+    render() {
+        const users = this.store.getAll();
+        return (
+            <div>
+                {users.map(user => <div key={user._id}>{user.name}</div>)}
+            </div>
+        );
+    }
 }
 
-// Create a store for managing Todos
-const todoStore = createStore<Todo>();
+class UserProfile extends StoreComponent {
+    render() {
+        const user = this.store.findFirst({ name: { equalWith: 'John Doe' } });
+        return <div>{user ? user.name : 'User not found'}</div>;
+    }
+}
 ```
 
-### Adding Data
 
-#### Single Record
 
-```tsx
-todoStore.create({ title: "Learn React Rock", completed: false });
-```
+## Explanation of Types
 
-#### Multiple Records
+- **RowType**: Represents a record with an `_id`, `_index`, and `_observe` along with user-defined data fields.
+- **ArgsType**: Defines the options for querying rows with flexibility like skipping, taking, and custom row processing.
+- **WhereType**: Represents the conditions for querying records, using fields like `contain`, `equalWith`, and range queries like `gt`, `lt`, etc.
+- **QueryValueType**: Specifies the allowed condition types for filtering rows based on field values.
 
-```tsx
-todoStore.createMany([
-  { title: "Write Documentation", completed: true },
-  { title: "Push to GitHub", completed: false },
-]);
-```
-
-### Querying Data
-
-#### Retrieve All Records
-
-```tsx
-const allTodos = todoStore.getAll();
-```
-
-#### Find Records by Criteria
-
-```tsx
-const completedTodos = todoStore.find({ completed: true });
-```
-
-#### Find a Single Record by ID
-
-```tsx
-const todo = todoStore.findById("unique_id");
-```
-
-### Updating Data
-
-#### Update Matching Records
-
-```tsx
-todoStore.update({ completed: true }, { title: "Push to GitHub" });
-```
-
-#### Update All Records
-
-```tsx
-todoStore.updateAll({ completed: false });
-```
-
-### Deleting Data
-
-#### Delete Matching Records
-
-```tsx
-todoStore.delete({ completed: true });
-```
-
-#### Delete All Records
-
-```tsx
-todoStore.clearAll();
-```
-
-### Meta Data Management
-
-React Rock supports storing metadata alongside your state:
-
-#### Set Metadata
-
-```tsx
-todoStore.setMeta("lastUpdated", new Date());
-```
-
-#### Get Metadata
-
-```tsx
-const lastUpdated = todoStore.getMeta("lastUpdated");
-```
-
-#### Clear Metadata
-
-```tsx
-todoStore.clearMeta();
-```
-
----
-
-## Advanced Examples
-
-### Pagination
-
-```tsx
-const paginatedTodos = todoStore.getAll({ skip: 0, take: 5 });
-```
-
-### Moving Records
-
-```tsx
-todoStore.move(0, 1); // Move record from index 0 to index 1
-```
-
-### Observing State Changes
-
-React Rock integrates seamlessly with React hooks for real-time updates:
-
-```tsx
-const TodoList = () => {
-  const todos = todoStore.getAll();
-
-  return (
-    <ul>
-      {todos.map(todo => (
-        <li key={todo._id}>{todo.title}</li>
-      ))}
-    </ul>
-  );
-};
-```
-
----
-
-## API Reference
-
-### `createStore`
-
-Creates a new store for managing state.
-
-#### Methods
-
-- **`create(row: Row)`**: Adds a new record.
-- **`createMany(rows: Row[])`**: Adds multiple records.
-- **`update(row: Partial<Row>, where: WhereType<Row>)`**: Updates matching records.
-- **`updateAll(row: Partial<Row>)`**: Updates all records.
-- **`delete(where: WhereType<Row>)`**: Deletes matching records.
-- **`clearAll()`**: Clears all records.
-- **`find(where: WhereType<Row>)`**: Finds matching records.
-- **`findById(id: string)`**: Finds a record by its ID.
-- **`setMeta(key, value)`**: Sets metadata.
-- **`getMeta(key)`**: Retrieves metadata.
-- **`clearMeta()`**: Clears metadata.
-
----
-
-## Contributing
-
-Contributions are welcome! Feel free to open an issue or submit a pull request on the [GitHub repository](https://github.com/devnax/react-rock).
-
----
 
 ## License
 
-React Rock is licensed under the MIT License.
+This package is licensed under the MIT License.
 
+---
+
+This documentation should provide a concise overview of how to use the `react-rock` package effectively.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please check out the [contribution guidelines](https://github.com/devnax/react-rock).
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
