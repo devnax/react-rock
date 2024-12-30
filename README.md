@@ -1,4 +1,8 @@
-# React-Rock Documentation
+<p align="center">
+  <img width="120" src="https://raw.githubusercontent.com/devnax/react-rock/main/logo.png" alt="React Rock logo">
+</p>
+
+<h1 align="center">React Rock</h1>
 
 React-Rock is a lightweight package for managing global state in React applications. It simplifies handling data by providing a store with rows and metadata, while offering methods to perform CRUD operations and more. It enables easy integration with React components, making it an ideal solution for managing complex state in large applications.
 
