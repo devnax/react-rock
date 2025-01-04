@@ -32,10 +32,11 @@ import { createStore } from 'react-rock';
 
 // Define RowType and MetaType
 type RowType = { name: string, age: number };
-type MetaType = { totalRecords: number };
+type MetaType = { anykey: any };
 
+const defaut_rows = [{ name: '', age: 0 }]
 // Create a store
-const users = createStore<RowType, MetaType>({ name: '', age: 0 }, { totalRecords: 0 });
+const users = createStore<RowType, MetaType>(defaut_rows, { anykey: '' });
 
 // Add a new row to the store
 users.create({ name: 'John Doe', age: 30 });
@@ -83,7 +84,7 @@ Here’s a table with all available methods and their descriptions:
 The `find` method allows you to search for rows in the store based on specific conditions:
 
 ```typescript
-const foundUsers = users.find({ name: 'John Doe' } });
+const foundUsers = users.find({ name: 'John Doe' } );
 console.log(foundUsers);
 ```
 
@@ -157,10 +158,10 @@ class UserList extends StoreComponent {
 users.create({ name: 'Alice', age: 25 });
 
 // Update a user
-users.update({ age: 26 }, { name: 'Alice' } });
+users.update({ age: 26 }, { name: 'Alice' } );
 
 // Delete a user
-users.delete({ name: 'Alice' } });
+users.delete({ name: 'Alice' } );
 ```
 
 ## Examples with `find` and Query
@@ -171,7 +172,7 @@ const usersOver25 = users.find({ age: { gt: 25 } });
 console.log(usersOver25);
 
 // Find the first user with the name 'Alice'
-const alice = users.findFirst({ name: 'Alice' } });
+const alice = users.findFirst({ name: 'Alice' } );
 console.log(alice);
 ```
 
