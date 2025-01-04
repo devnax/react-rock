@@ -34,9 +34,9 @@ import { createStore } from 'react-rock';
 type RowType = { name: string, age: number };
 type MetaType = { anykey: any };
 
-const defaut_rows = [{ name: '', age: 0 }]
+const default_rows = [{ name: '', age: 0 }]
 // Create a store
-const users = createStore<RowType, MetaType>(defaut_rows, { anykey: '' });
+const users = createStore<RowType, MetaType>(default_rows, { anykey: '' });
 
 // Add a new row to the store
 users.create({ name: 'John Doe', age: 30 });
