@@ -83,7 +83,7 @@ Here’s a table with all available methods and their descriptions:
 The `find` method allows you to search for rows in the store based on specific conditions:
 
 ```typescript
-const foundUsers = users.find({ name: { equalWith: 'John Doe' } });
+const foundUsers = users.find({ name: 'John Doe' } });
 console.log(foundUsers);
 ```
 
@@ -157,10 +157,10 @@ class UserList extends StoreComponent {
 users.create({ name: 'Alice', age: 25 });
 
 // Update a user
-users.update({ age: 26 }, { name: { equalWith: 'Alice' } });
+users.update({ age: 26 }, { name: 'Alice' } });
 
 // Delete a user
-users.delete({ name: { equalWith: 'Alice' } });
+users.delete({ name: 'Alice' } });
 ```
 
 ## Examples with `find` and Query
@@ -171,7 +171,7 @@ const usersOver25 = users.find({ age: { gt: 25 } });
 console.log(usersOver25);
 
 // Find the first user with the name 'Alice'
-const alice = users.findFirst({ name: { equalWith: 'Alice' } });
+const alice = users.findFirst({ name: 'Alice' } });
 console.log(alice);
 ```
 
@@ -184,7 +184,7 @@ import { StoreComponent } from 'react-rock';
 
 class UserList extends StoreComponent {
     render() {
-        const users = this.store.getAll();
+        const users = users.getAll();
         return (
             <div>
                 {users.map(user => <div key={user._id}>{user.name}</div>)}
@@ -195,7 +195,7 @@ class UserList extends StoreComponent {
 
 class UserProfile extends StoreComponent {
     render() {
-        const user = this.store.findFirst({ name: { equalWith: 'John Doe' } });
+        const user = users.findFirst({ name: 'John Doe' });
         return <div>{user ? user.name : 'User not found'}</div>;
     }
 }
