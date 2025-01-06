@@ -1,6 +1,6 @@
 {
   "name": "react-rock",
-  "version": "3.1.8",
+  "version": "3.1.9",
   "author": "Naxrul Ahmed",
   "description": "React-Rock is a modern, lightweight state management library designed to simplify handling global state in React applications. With a minimal API and powerful features like freezing data updates for optimized re-renders, React-Rock allows you to manage state more efficiently while ensuring your app remains fast and responsive.",
   "main": "./index.js",
@@ -20,13 +20,12 @@
     "url": "https://github.com/devnax/react-rock/issues"
   },
   "homepage": "https://github.com/devnax/react-rock#readme",
-  "dependencies": {},
   "devDependencies": {
-    "makepack": "latest",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "makepack": "^1.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "typescript": "^4.4.2",
-    "@types/react": "^19.0.2",
-    "@types/react-dom": "^19.0.2"
+    "typescript": "^4.4.2"
   }
 }
