@@ -19,7 +19,7 @@ const _row = <R>(row: Partial<RowType<R>>): RowType<R> => {
     return { ...row, _id: row._id || _uid(), _observe: row._observe || _random() } as any
 }
 
-export const createStore = <Row extends object, MetaProps extends object = {}>(rows: Row[], meta: MetaProps) => {
+export const createStore = <Row extends object, MetaProps extends object = {}>(rows?: Row[], meta?: MetaProps) => {
 
     const factory = {
         data: {
@@ -59,11 +59,11 @@ export const createStore = <Row extends object, MetaProps extends object = {}>(r
         }, [])
     }
 
-    for (let row of rows) {
+    for (let row of (rows || [])) {
         factory.data.state.push(_row(row))
     }
-    for (let key in meta) {
-        factory.data.meta.set(key, meta[key])
+    for (let key in (meta || {} as MetaProps)) {
+        factory.data.meta.set(key, (meta as any)[key])
     }
 
     abstract class StateHandler {

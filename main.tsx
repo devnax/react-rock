@@ -1,5 +1,5 @@
 import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { createStore } from './src'
 
 const rows = [
@@ -52,11 +52,8 @@ store.create({
 
 function A() {
   const [email, setEmail] = React.useState("nax@gamil.com")
-  const all = store.find({
-    email: {
-      startWith: "nax1"
-    }
-  })
+  const all = store.getAll()
+
 
   return (
     <div>
@@ -108,4 +105,11 @@ const App = () => {
   );
 };
 
-ReactDOM.render(<App />, document.getElementById('root'));
+
+
+
+const rootEle = document.getElementById('root')
+if (rootEle) {
+  const root = createRoot(rootEle);
+  root.render(<App />);
+}
