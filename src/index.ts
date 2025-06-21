@@ -1,4 +1,3 @@
-"use client"
 import { useEffect, useId, useState, createElement, Fragment, Component } from 'react'
 import { ArgsType, IStateHandler, RowType, StateDataType, WhereType } from './types';
 import Finder, { isOb } from './Finder';
