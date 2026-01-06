@@ -1,12 +1,13 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
-import { createStore } from './src'
+import createStore from './src'
+import { xv } from 'xanv';
 
 const rows = [
   {
     name: "nax",
     email: "nax@gamil.com",
-    age: 10
+    // age: 10
   },
   {
     name: "nax",
@@ -35,32 +36,27 @@ const rows = [
   }
 ]
 
-type Row = {
-  name: string;
-  email: string;
-  age: number;
-}
 
-const store = createStore<Row, {}>()
-store.createMany(rows)
-
-store.create({
-  name: "Naxrul",
-  email: "naxrul@gmail.com",
-  age: 20
+const store = createStore({
+  name: xv.string().min(3).max(50),
+  email: xv.string().min(5).max(100),
+  age: xv.number().optional().min(1).max(150)
+}, {
+  appName: xv.string().default("React Rock App"),
+  version: xv.string().default("1.0.0")
 })
+
+const d = store.create(rows)
 
 function A() {
   const [email, setEmail] = React.useState("nax@gamil.com")
-  const all = store.getAll()
-
+  const all = store.rows()
 
   return (
     <div>
       {all.map((item, idx: any) => {
-
         return (
-          <li key={idx}>{item.email} - {item.name}</li>
+          <li key={idx}>#{item.id} - {item.email} - {item.name}</li>
         )
       })}
       <button
@@ -73,7 +69,6 @@ function A() {
 }
 
 
-
 const App = () => {
   return (
     <div>
@@ -82,7 +77,7 @@ const App = () => {
         onClick={() => {
           store.create({
             name: Math.random().toString(),
-            email: "",
+            email: `${Math.random().toString()}@gmail.com`,
             age: 20
           })
         }}
@@ -98,7 +93,9 @@ const App = () => {
       >View</button>
       <button
         onClick={() => {
-          store.delete({ name: "nax" })
+          store.delete({
+            name: "nax"
+          })
         }}
       >Delete</button>
     </div>

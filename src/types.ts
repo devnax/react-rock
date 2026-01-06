@@ -1,57 +1,35 @@
-export type StateDataType = "state" | "meta"
+import { Infer, XVInstanceType } from "xanv";
 
-export type RowPredefinedFields = {
-    _id: string;
-    _index: number;
-    _observe: number;
+export type RowSchema = {
+   [key: string]: XVInstanceType
 }
 
-export type FinderArgsType<Row> = {
-    getRow?: (row: Row, index: number) => Row | void;
-    skip?: number;
-    take?: number;
-    freeze?: boolean;
+export type MetaSchema = {
+   [key: string]: XVInstanceType
 }
 
-export type RowType<Row> = Row & RowPredefinedFields
-export type WhereType<Row> = QueryType<RowType<Row>>
-export type ArgsType<Row> = FinderArgsType<RowType<Row>>
-export type GetRowCallback<Row> = (row: Row, index: number) => Row | void;
 
-export interface IStateHandler<Row, MetaProps> {
-    create(row: Row, freeze?: boolean): RowType<Row>;
-    createMany(rows: Row[], freeze?: boolean): void;
-    update(row: Partial<Row>, where: WhereType<Row>, freeze?: boolean): void;
-    updateAll(row: Partial<Row>, freeze?: boolean): void;
-    delete(where: WhereType<Row>, freeze?: boolean): void;
-    clearAll(freeze?: boolean): void;
-    move(oldIdx: number, newIdx: number, freeze?: boolean): void;
-
-    getAll(args?: { freeze?: boolean; getRow?: GetRowCallback<Row> }): RowType<Row>[];
-    find(where: WhereType<Row>, args?: ArgsType<Row>): RowType<Row>[];
-    findFirst(where: WhereType<Row>, freeze?: boolean): RowType<Row>;
-    findById(_id: string, freeze?: boolean): RowType<Row>;
-
-    setMeta<T extends keyof MetaProps>(key: T, value: MetaProps[T], freeze?: boolean): void;
-    getMeta<T extends keyof MetaProps>(key: T, freeze?: boolean): MetaProps[T];
-    getAllMeta(freeze?: boolean): MetaProps;
-    deleteMeta<T extends keyof MetaProps>(key: T, freeze?: boolean): void;
-    clearMeta(freeze?: boolean): void;
+export type MakeRowType<RS> = Infer<RS> & {
+   id: number
+   observe: number
 }
 
+export type MakeMetaType<MS> = Infer<MS>
+
+export type RowValueType = string | number | boolean | null | undefined;
 
 export type QueryValueType = {
-    contain?: string | number | boolean | null | undefined;
-    startWith?: string | number;
-    endWith?: string | number;
-    equalWith?: string | number | boolean | null | undefined;
-    notEqualWith?: string | number | boolean | null | undefined;
-    gt?: number;
-    lt?: number;
-    gte?: number;
-    lte?: number;
+   contain?: RowValueType;
+   startWith?: string | number;
+   endWith?: string | number;
+   equalWith?: RowValueType;
+   notEqualWith?: RowValueType;
+   gt?: number;
+   lt?: number;
+   gte?: number;
+   lte?: number;
 }
 
-export type QueryType<Row = {}> = {
-    [key in keyof Row]?: string | number | boolean | null | undefined | QueryValueType
+export type WhereType<RS> = {
+   [key in keyof Infer<RS>]?: RowValueType | QueryValueType
 }
