@@ -8,10 +8,12 @@ export type MetaSchema = {
    [key: string]: XVInstanceType
 }
 
+export type StoreRID = number
+export type StoreVID = number
 
 export type MakeRowType<RS> = Infer<RS> & {
-   rid: number
-   vid: number
+   rid: StoreRID
+   vid: StoreVID
 }
 
 export type MakeMetaType<MS> = Infer<MS>
@@ -31,5 +33,5 @@ export type QueryValueType = {
 }
 
 export type WhereType<RS> = {
-   [key in keyof Infer<RS>]?: RowValueType | QueryValueType
+   [key in keyof MakeRowType<RS>]?: RowValueType | QueryValueType
 }

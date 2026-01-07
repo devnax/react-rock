@@ -6,4 +6,7 @@ const createStore = <RS extends RowSchema, MS extends MetaSchema | undefined = u
     return new Store(rowSchema, metaSchema)
 }
 
+export * from "./types"
+export { Store }
+
 export default createStore
