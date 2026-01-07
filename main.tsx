@@ -50,13 +50,14 @@ const d = store.create(rows)
 
 function A() {
   const [email, setEmail] = React.useState("nax@gamil.com")
-  const all = store.rows()
+  const all = store.find({ name: "nax1" })
+  const _all = store.find({ name: "nax1" })
 
   return (
     <div>
       {all.map((item, idx: any) => {
         return (
-          <li key={idx}>#{item.id} - {item.email} - {item.name}</li>
+          <li key={idx}>#{item.rid} - {item.email} - {item.name} {item.vid}</li>
         )
       })}
       <button
@@ -84,13 +85,11 @@ const App = () => {
       >Add+</button>
       <button
         onClick={() => {
-          store.create({
-            name: Math.random().toString(),
-            email: "",
-            age: 20
-          })
+          store.update({
+            email: `${Math.random().toString().substring(2, 5)}@gmail.com`,
+          }, { name: "nax1" })
         }}
-      >View</button>
+      >UPDATE</button>
       <button
         onClick={() => {
           store.delete({

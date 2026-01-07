@@ -10,8 +10,8 @@ export type MetaSchema = {
 
 
 export type MakeRowType<RS> = Infer<RS> & {
-   id: number
-   observe: number
+   rid: number
+   vid: number
 }
 
 export type MakeMetaType<MS> = Infer<MS>
