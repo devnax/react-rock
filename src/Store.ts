@@ -3,6 +3,11 @@ import { useEffect, useId, useState } from "react"
 import { MakeMetaType, MakeRowType, MetaSchema, RowSchema, WhereType } from "./types"
 import { Infer, xv } from "xanv"
 
+const uid = useId as any
+const ustate = useState as any
+const ueffect = useEffect as any
+
+
 class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined> {
    private _rows: MakeRowType<RS>[] = []
    private _meta: Map<keyof MakeMetaType<MS>, MakeMetaType<MS>[keyof MakeMetaType<MS>]> = new Map()
@@ -21,12 +26,12 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       this._meta_schema = metaSchema
    }
 
-   private use = () => {
+   private observe = () => {
       try {
-         const hid = useId()
-         const [, dispatch] = useState(0)
+         const hid = uid()
+         const [, dispatch] = ustate(0)
          this._hooks.set(hid, () => dispatch(Math.random()))
-         useEffect(() => () => {
+         ueffect(() => () => {
             this._hooks.delete(hid)
          }, [])
       } catch (error) { }
@@ -45,26 +50,26 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       }, 0)
    }
 
-   rows(use = true) {
-      use && this.use()
+   rows(observe = true) {
+      observe && this.observe()
       return this._rows
    }
 
-   metas(use = true) {
-      use && this.use()
+   metas(observe = true) {
+      observe && this.observe()
       return this._meta
    }
 
    // Row Methods
-   create(row: Partial<MakeRowType<RS>>, dispatch?: boolean): MakeRowType<RS>
-   create(row: Partial<MakeRowType<RS>>[], dispatch?: boolean): MakeRowType<RS>[]
-   create(row: Partial<MakeRowType<RS>> | Partial<MakeRowType<RS>>[], dispatch = true): MakeRowType<RS> | MakeRowType<RS>[] {
+   create(row: Partial<MakeRowType<RS>>, observe?: boolean): MakeRowType<RS>
+   create(row: Partial<MakeRowType<RS>>[], observe?: boolean): MakeRowType<RS>[]
+   create(row: Partial<MakeRowType<RS>> | Partial<MakeRowType<RS>>[], observe = true): MakeRowType<RS> | MakeRowType<RS>[] {
       if (Array.isArray(row)) {
          const rows: MakeRowType<RS>[] = []
          for (const r of row) {
             rows.push(this.create(r, false))
          }
-         dispatch && this.dispatch()
+         observe && this.dispatch()
          return rows
       }
 
@@ -84,13 +89,13 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       }
 
       this._rows.push(_row)
-      dispatch && this.dispatch()
+      observe && this.dispatch()
       return _row
    }
 
 
    // update
-   update(row: Partial<MakeRowType<RS>>, where?: WhereType<RS> | null, dispatch = true): MakeRowType<RS>[] | null {
+   update(row: Partial<MakeRowType<RS>>, where?: WhereType<RS> | null, observe = true): MakeRowType<RS>[] | null {
 
       // validate row
       let r: any = {} as MakeRowType<RS>
@@ -115,27 +120,27 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
             const rowIndex = this._rows.findIndex(r => r.rid === rid)
             this._rows[rowIndex] = rows[index]
          }
-         dispatch && this.dispatch()
+         observe && this.dispatch()
       }
       return this.find(where)
    }
 
    // delete
-   delete(where?: WhereType<RS> | null, dispatch = true): number {
+   delete(where?: WhereType<RS> | null, observe = true): number {
       const rows = this.find(where, false)
 
       let deletedCount = 0
       if (rows.length > 0) {
          this._rows = this._rows.filter(r => !rows.find(dr => dr.rid === r.rid))
          deletedCount = rows.length
-         dispatch && this.dispatch()
+         observe && this.dispatch()
       }
       return deletedCount
    }
 
    // find
-   find(where?: WhereType<RS> | null, use = true): MakeRowType<RS>[] {
-      use && this.use()
+   find(where?: WhereType<RS> | null, observe = true): MakeRowType<RS>[] {
+      observe && this.observe()
 
       if (!where) {
          return this._rows
@@ -238,17 +243,17 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return rows
    }
 
-   findOne(where: WhereType<RS>, use = true): MakeRowType<RS> | null {
-      const rows = this.find(where, use)
+   findOne(where: WhereType<RS>, observe = true): MakeRowType<RS> | null {
+      const rows = this.find(where, observe)
       return rows.length > 0 ? rows[0] : null
    }
 
-   findById(rid: string, use = true): MakeRowType<RS> | null {
-      return this.findOne({ rid }, use)
+   findById(rid: string, observe = true): MakeRowType<RS> | null {
+      return this.findOne({ rid }, observe)
    }
 
-   getIndex(where: WhereType<RS>, use = true): number {
-      use && this.use()
+   getIndex(where: WhereType<RS>, observe = true): number {
+      observe && this.observe()
       const row = this.findOne(where, false)
       if (row) {
          return this._rows.findIndex(r => r.rid === row.rid)
@@ -256,34 +261,34 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return -1
    }
 
-   move(fromIndex: number, toIndex: number, dispatch = true): boolean {
+   move(fromIndex: number, toIndex: number, observe = true): boolean {
       if (fromIndex < 0 || fromIndex >= this._rows.length) return false
       if (toIndex < 0 || toIndex >= this._rows.length) return false
       const [movedRow] = this._rows.splice(fromIndex, 1)
       this._rows.splice(toIndex, 0, movedRow)
-      dispatch && this.dispatch()
+      observe && this.dispatch()
       return true
    }
 
    // Meta Methods
-   setMeta<T extends keyof Infer<MS>>(key: T, value: Infer<MS>[T], dispatch = true) {
+   setMeta<T extends keyof Infer<MS>>(key: T, value: Infer<MS>[T], observe = true) {
       this._meta.set(key, this._meta_schema ? (this._meta_schema[key] as any).parse(value) : value)
-      dispatch && this.dispatch()
+      observe && this.dispatch()
    }
 
-   getMeta<T extends keyof Infer<MS>>(key: T, use = true): Infer<MS>[T] | undefined {
-      use && this.use()
+   getMeta<T extends keyof Infer<MS>>(key: T, observe = true): Infer<MS>[T] | undefined {
+      observe && this.observe()
       return this._meta.get(key) as Infer<MS>[T] | undefined
    }
 
-   deleteMeta<T extends keyof Infer<MS>>(key: T, dispatch = true) {
+   deleteMeta<T extends keyof Infer<MS>>(key: T, observe = true) {
       this._meta.delete(key)
-      dispatch && this.dispatch()
+      observe && this.dispatch()
    }
 
-   clearMeta(dispatch = true) {
+   clearMeta(observe = true) {
       this._meta.clear()
-      dispatch && this.dispatch()
+      observe && this.dispatch()
    }
 }
 
