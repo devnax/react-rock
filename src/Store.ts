@@ -145,99 +145,104 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       if (!where) {
          return this._rows
       }
-
       const rows: MakeRowType<RS>[] = []
-      for (let key in where) {
-         const wv = (where as any)[key]
-         if (typeof wv === "object" && wv !== null) {
-            // QueryValueType
-            for (let row of this._rows) {
-               let match = true
-               const rvalue = (row as any)[key]
-               if (wv.contain !== undefined) {
-                  if (typeof rvalue === "string" && typeof wv.contain === "string") {
-                     if (!rvalue.includes(wv.contain)) {
-                        match = false
+
+      for (const row of this._rows) {
+         const match = Object.keys(row).find(column => {
+            let _match = true
+            const rvalue = row[column]
+
+            for (let wcol in where) {
+               const wv = where[wcol]
+               if (typeof wv === "object" && wv !== null) {
+
+                  if (wv.contain !== undefined) {
+                     if (typeof rvalue === "string" && typeof wv.contain === "string") {
+                        if (!rvalue.includes(wv.contain)) {
+                           _match = false
+                        }
+                     } else {
+                        _match = false
                      }
-                  } else {
-                     match = false
                   }
-               }
-               if (wv.startWith !== undefined) {
-                  if (typeof rvalue === "string" && typeof wv.startWith === "string") {
-                     if (!rvalue.startsWith(wv.startWith)) {
-                        match = false
+
+                  if (wv.startWith !== undefined) {
+                     if (typeof rvalue === "string" && typeof wv.startWith === "string") {
+                        if (!rvalue.startsWith(wv.startWith)) {
+                           _match = false
+                        }
+                     } else {
+                        _match = false
                      }
-                  } else {
-                     match = false
                   }
-               }
-               if (wv.endWith !== undefined) {
-                  if (typeof rvalue === "string" && typeof wv.endWith === "string") {
-                     if (!rvalue.endsWith(wv.endWith)) {
-                        match = false
+                  if (wv.endWith !== undefined) {
+                     if (typeof rvalue === "string" && typeof wv.endWith === "string") {
+                        if (!rvalue.endsWith(wv.endWith)) {
+                           _match = false
+                        }
+                     } else {
+                        _match = false
                      }
-                  } else {
-                     match = false
                   }
-               }
-               if (wv.equalWith !== undefined) {
-                  if (rvalue !== wv.equalWith) {
-                     match = false
-                  }
-               }
-               if (wv.notEqualWith !== undefined) {
-                  if (rvalue === wv.notEqualWith) {
-                     match = false
-                  }
-               }
-               if (wv.gt !== undefined) {
-                  if (typeof rvalue === "number") {
-                     if (!(rvalue > wv.gt)) {
-                        match = false
+                  if (wv.equalWith !== undefined) {
+                     if (rvalue !== wv.equalWith) {
+                        _match = false
                      }
-                  } else {
-                     match = false
                   }
-               }
-               if (wv.lt !== undefined) {
-                  if (typeof rvalue === "number") {
-                     if (!(rvalue < wv.lt)) {
-                        match = false
+                  if (wv.notEqualWith !== undefined) {
+                     if (rvalue === wv.notEqualWith) {
+                        _match = false
                      }
-                  } else {
-                     match = false
                   }
-               }
-               if (wv.gte !== undefined) {
-                  if (typeof rvalue === "number") {
-                     if (!(rvalue >= wv.gte)) {
-                        match = false
+                  if (wv.gt !== undefined) {
+                     if (typeof rvalue === "number") {
+                        if (!(rvalue > wv.gt)) {
+                           _match = false
+                        }
+                     } else {
+                        _match = false
                      }
-                  } else {
-                     match = false
                   }
-               }
-               if (wv.lte !== undefined) {
-                  if (typeof rvalue === "number") {
-                     if (!(rvalue <= wv.lte)) {
-                        match = false
+                  if (wv.lt !== undefined) {
+                     if (typeof rvalue === "number") {
+                        if (!(rvalue < wv.lt)) {
+                           _match = false
+                        }
+                     } else {
+                        _match = false
                      }
-                  } else {
-                     match = false
                   }
+                  if (wv.gte !== undefined) {
+                     if (typeof rvalue === "number") {
+                        if (!(rvalue >= wv.gte)) {
+                           _match = false
+                        }
+                     } else {
+                        _match = false
+                     }
+                  }
+                  if (wv.lte !== undefined) {
+                     if (typeof rvalue === "number") {
+                        if (!(rvalue <= wv.lte)) {
+                           _match = false
+                        }
+                     } else {
+                        _match = false
+                     }
+                  }
+                  continue
                }
-               if (match) {
-                  rows.push(row)
+
+               if (wv !== rvalue) {
+                  _match = false
+                  break
                }
             }
-         } else {
-            // RowvType
-            for (let row of this._rows) {
-               if ((row as any)[key] === wv) {
-                  rows.push(row)
-               }
-            }
+            return _match
+         })
+
+         if (match) {
+            rows.push(row)
          }
       }
       return rows
