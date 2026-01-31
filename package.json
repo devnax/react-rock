@@ -1,10 +1,10 @@
 {
   "name": "react-rock",
-  "version": "3.2.6",
+  "version": "3.2.7",
   "author": "Naxrul Ahmed",
   "description": "React-Rock is a modern, lightweight state management library designed to simplify handling global state in React applications. With a minimal API and powerful features like freezing data updates for optimized re-renders, React-Rock allows you to manage state more efficiently while ensuring your app remains fast and responsive.",
-  "main": "./index.js",
-  "module": "./index.mjs",
+  "main": "./index.cjs",
+  "module": "./index.js",
   "types": "./index.d.ts",
   "type": "module",
   "scripts": {
@@ -26,17 +26,10 @@
   "devDependencies": {
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "makepack": "^1.7.24",
+    "makepack": "^1.7.30",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^4.4.2"
-  },
-  "exports": {
-    ".": {
-      "import": "./index.mjs",
-      "require": "./index.js",
-      "types": "./index.d.ts"
-    }
   },
   "dependencies": {
     "xanv": "^1.1.11"

@@ -262,8 +262,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
    }
 
    move(fromIndex: number, toIndex: number, observe = true): boolean {
-      if (fromIndex < 0 || fromIndex >= this._rows.length) return false
-      if (toIndex < 0 || toIndex >= this._rows.length) return false
+      if (fromIndex < 0 || toIndex < 0) return false
       const [movedRow] = this._rows.splice(fromIndex, 1)
       this._rows.splice(toIndex, 0, movedRow)
       observe && this.dispatch()
