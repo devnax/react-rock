@@ -47,6 +47,7 @@ const store = createStore({
 })
 
 const d = store.createMany({
+  disablelObservation: false,
   data: rows
 })
 
@@ -54,10 +55,9 @@ function A() {
   const [email, setEmail] = React.useState("nax@gamil.com")
   const all = store.find({
     where: {
-
+      name: 3
     }
   })
-  const _all = store.find({ where: { name: "nax1" } })
 
   return (
     <div>

@@ -185,6 +185,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
 
             for (let wcol in where) {
                const wv = where[wcol]
+
                if (typeof wv === "object" && wv !== null) {
 
                   if (wv.contain !== undefined) {
@@ -262,6 +263,8 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
                      }
                   }
                   continue
+               } else {
+                  _match = false
                }
 
                if (wv !== rvalue) {
@@ -269,6 +272,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
                   break
                }
             }
+
             return _match
          })
 
