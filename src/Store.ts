@@ -72,7 +72,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return this._meta
    }
 
-   createMany(args: CreateManyArgs<RS>) {
+   createMany(args: CreateManyArgs<RS>): MakeRowType<RS>[] {
       const { data, disablelObservation, observeId } = args
       const res = []
       for (let row of data) {
@@ -88,7 +88,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return res
    }
    // Row Methods
-   create(args: CreateArgs<RS>): MakeRowType<RS> | MakeRowType<RS>[] {
+   create(args: CreateArgs<RS>): MakeRowType<RS> {
       const { data, disablelObservation, observeId } = args
       // validate and create row
       let r: any = {} as MakeRowType<RS>
