@@ -1,6 +1,6 @@
 "use client"
 import { useEffect, useId, useState } from "react"
-import { MakeMetaType, MakeRowType, MetaSchema, RowSchema, WhereType } from "./types"
+import { CreateArgs, CreateManyArgs, DeleteArgs, FindArgs, MakeMetaType, MakeRowType, MetaSchema, MoveArgs, RowSchema, UpdateArgs, WhereType } from "./types"
 import { Infer, xv } from "xanv"
 
 const uid = useId as any
@@ -26,23 +26,35 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       this._meta_schema = metaSchema
    }
 
-   private observe = () => {
+   private observe = (observeId?: string) => {
       try {
          const hid = uid()
+         const id = observeId || hid
          const [, dispatch] = ustate(0)
-         this._hooks.set(hid, () => dispatch(Math.random()))
+         this._hooks.set(id, () => dispatch(Math.random()))
          ueffect(() => () => {
-            this._hooks.delete(hid)
+            this._hooks.delete(id)
          }, [])
       } catch (error) { }
    }
 
-   private dispatch = () => {
+   dispatch(observeIdOrCallbabck?: string | ((cb: Function, key: string) => void)) {
       clearTimeout(this._timer)
+      const isFn = typeof observeIdOrCallbabck === "function"
       this._timer = setTimeout(() => {
          this._hooks.forEach((cb, key) => {
             try {
-               cb()
+               if (isFn) {
+                  observeIdOrCallbabck(cb, key)
+               } else {
+                  if (observeIdOrCallbabck) {
+                     if (key === observeIdOrCallbabck) {
+                        cb()
+                     }
+                  } else {
+                     cb()
+                  }
+               }
             } catch (_err) {
                this._hooks.delete(key)
             }
@@ -60,25 +72,30 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return this._meta
    }
 
-   // Row Methods
-   create(row: Partial<MakeRowType<RS>>, observe?: boolean): MakeRowType<RS>
-   create(row: Partial<MakeRowType<RS>>[], observe?: boolean): MakeRowType<RS>[]
-   create(row: Partial<MakeRowType<RS>> | Partial<MakeRowType<RS>>[], observe = true): MakeRowType<RS> | MakeRowType<RS>[] {
-      if (Array.isArray(row)) {
-         const rows: MakeRowType<RS>[] = []
-         for (const r of row) {
-            rows.push(this.create(r, false))
-         }
-         observe && this.dispatch()
-         return rows
+   createMany(args: CreateManyArgs<RS>) {
+      const { data, disablelObservation, observeId } = args
+      const res = []
+      for (let row of data) {
+         const created = this.create({
+            data: row,
+            disablelObservation: true
+         })
+         res.push(created)
       }
-
+      if (!disablelObservation) {
+         this.dispatch(observeId)
+      }
+      return res
+   }
+   // Row Methods
+   create(args: CreateArgs<RS>): MakeRowType<RS> | MakeRowType<RS>[] {
+      const { data, disablelObservation, observeId } = args
       // validate and create row
       let r: any = {} as MakeRowType<RS>
       for (let key in this._row_schema) {
          if (key === "rid" || key === "vid") continue;
          const schema = this._row_schema[key]
-         r[key] = schema.parse(row[key])
+         r[key] = schema.parse(data[key])
       }
 
       this._last_id = this._last_id + 1;
@@ -89,28 +106,29 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       }
 
       this._rows.push(_row)
-      observe && this.dispatch()
+      if (!disablelObservation) {
+         this.dispatch(observeId)
+      }
       return _row
    }
 
 
    // update
-   update(row: Partial<MakeRowType<RS>>, where?: WhereType<RS> | null, observe = true): MakeRowType<RS>[] | null {
-
+   update(args: UpdateArgs<RS>): MakeRowType<RS>[] | null {
+      const { data, where, disablelObservation, observeId } = args
       // validate row
       let r: any = {} as MakeRowType<RS>
-      for (let key in row) {
+      for (let key in data) {
          if (key === "rid" || key === 'vid') continue;
          const schema = this._row_schema[key]
-         r[key] = schema.parse(row[key])
+         r[key] = schema.parse(data[key])
       }
 
-      const rows = this.find(where)
+      const rows = this.find({ where })
       if (rows.length > 0) {
          for (let index = 0; index < rows.length; index++) {
             const _row = rows[index];
             const rid = _row.rid
-
             rows[index] = {
                ..._row,
                ...r,
@@ -120,27 +138,40 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
             const rowIndex = this._rows.findIndex(r => r.rid === rid)
             this._rows[rowIndex] = rows[index]
          }
-         observe && this.dispatch()
+         if (!disablelObservation) {
+            this.dispatch(observeId)
+         }
       }
-      return this.find(where)
+      return this.find({ where, disablelObservation: true })
    }
 
    // delete
-   delete(where?: WhereType<RS> | null, observe = true): number {
-      const rows = this.find(where, false)
+   delete(args: DeleteArgs<RS>): number {
+      const { where, disablelObservation, observeId } = args
+      const rows = this.find({
+         where,
+         disablelObservation: true
+      })
 
       let deletedCount = 0
       if (rows.length > 0) {
          this._rows = this._rows.filter(r => !rows.find(dr => dr.rid === r.rid))
          deletedCount = rows.length
-         observe && this.dispatch()
+         if (!disablelObservation) {
+            this.dispatch(observeId)
+         }
       }
       return deletedCount
    }
 
    // find
-   find(where?: WhereType<RS> | null, observe = true): MakeRowType<RS>[] {
-      observe && this.observe()
+   find(args: FindArgs<RS>): MakeRowType<RS>[] {
+
+      let { where, disablelObservation, observeId } = args
+
+      if (!disablelObservation) {
+         this.observe(observeId)
+      }
 
       if (!where) {
          return this._rows
@@ -248,35 +279,33 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return rows
    }
 
-   findOne(where: WhereType<RS>, observe = true): MakeRowType<RS> | null {
-      const rows = this.find(where, observe)
+   findOne(args: FindArgs<RS>): MakeRowType<RS> | null {
+      const rows = this.find(args)
       return rows.length > 0 ? rows[0] : null
    }
 
-   findById(rid: string, observe = true): MakeRowType<RS> | null {
-      return this.findOne({ rid }, observe)
-   }
-
-   getIndex(where: WhereType<RS>, observe = true): number {
-      observe && this.observe()
-      const row = this.findOne(where, false)
+   getIndex(args: FindArgs<RS>): number {
+      const row = this.findOne(args)
       if (row) {
          return this._rows.findIndex(r => r.rid === row.rid)
       }
       return -1
    }
 
-   move(fromIndex: number, toIndex: number, observe = true): boolean {
+   move(args: MoveArgs<RS>): boolean {
+      const { fromIndex, toIndex, disablelObservation, observeId } = args
       if (fromIndex < 0 || toIndex < 0) return false
       const [movedRow] = this._rows.splice(fromIndex, 1)
       this._rows.splice(toIndex, 0, movedRow)
-      observe && this.dispatch()
+      if (!disablelObservation) {
+         this.dispatch(observeId)
+      }
       return true
    }
 
    // Meta Methods
    setMeta<T extends keyof Infer<MS>>(key: T, value: Infer<MS>[T], observe = true) {
-      this._meta.set(key, this._meta_schema ? (this._meta_schema[key] as any).parse(value) : value)
+      this._meta.set(key, this._meta_schema ? (this._meta_schema as any)[key].parse(value) : value)
       observe && this.dispatch()
    }
 

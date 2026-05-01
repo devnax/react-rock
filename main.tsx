@@ -46,12 +46,18 @@ const store = createStore({
   version: xv.string().default("1.0.0")
 })
 
-const d = store.create(rows)
+const d = store.createMany({
+  data: rows
+})
 
 function A() {
   const [email, setEmail] = React.useState("nax@gamil.com")
-  const all = store.find({ name: "nax1" })
-  const _all = store.find({ name: "nax1" })
+  const all = store.find({
+    where: {
+
+    }
+  })
+  const _all = store.find({ where: { name: "nax1" } })
 
   return (
     <div>
@@ -77,23 +83,32 @@ const App = () => {
       <button
         onClick={() => {
           store.create({
-            name: Math.random().toString(),
-            email: `${Math.random().toString()}@gmail.com`,
-            age: 20
+            data: {
+              name: Math.random().toString(),
+              email: `${Math.random().toString()}@gmail.com`,
+              age: 20
+            }
           })
         }}
       >Add+</button>
       <button
         onClick={() => {
           store.update({
-            email: `${Math.random().toString().substring(2, 5)}@gmail.com`,
-          }, { name: "nax1" })
+            data: {
+              email: `${Math.random().toString().substring(2, 5)}@gmail.com`,
+            },
+            where: {
+              name: "nax1"
+            }
+          })
         }}
       >UPDATE</button>
       <button
         onClick={() => {
           store.delete({
-            name: "nax"
+            where: {
+              name: "nax"
+            }
           })
         }}
       >Delete</button>
