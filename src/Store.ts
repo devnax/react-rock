@@ -263,13 +263,13 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
                      }
                   }
                   continue
-               } else {
-                  _match = false
                }
 
                if (wv !== rvalue) {
                   _match = false
                   break
+               } else {
+
                }
             }
 
