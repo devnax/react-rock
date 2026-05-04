@@ -61,37 +61,37 @@ export type WhereType<RS> = {
 export type FindArgs<RS> = {
    where: WhereType<RS>;
    observeId?: string;
-   disablelObservation?: boolean
+   disableObservation?: boolean
 }
 
 export type DeleteArgs<RS> = {
    where: WhereType<RS>;
    observeId?: string;
-   disablelObservation?: boolean
+   disableObservation?: boolean
 }
 
 export type UpdateArgs<RS> = {
    data: Partial<MakeRowType<RS>>;
    where: WhereType<RS>;
    observeId?: string;
-   disablelObservation?: boolean
+   disableObservation?: boolean
 }
 
 export type CreateArgs<RS> = {
    data: Partial<MakeRowType<RS>>
    observeId?: string;
-   disablelObservation?: boolean
+   disableObservation?: boolean
 }
 
 export type CreateManyArgs<RS> = {
    data: Partial<MakeRowType<RS>>[]
    observeId?: string;
-   disablelObservation?: boolean
+   disableObservation?: boolean
 }
 
 export type MoveArgs<RS> = {
    fromIndex: number,
    toIndex: number;
    observeId?: string;
-   disablelObservation?: boolean
+   disableObservation?: boolean
 }

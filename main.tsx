@@ -5,31 +5,37 @@ import { xv } from 'xanv';
 
 const rows = [
   {
+    container: "ROOT",
     name: "nax",
     email: "nax@gamil.com",
     // age: 10
   },
   {
+    container: "ROOT",
     name: "nax",
     email: "nax@gamil.com",
     age: 10
   },
   {
+    container: "ROOT",
     name: "nax",
     email: "nax1@gamil.com",
     age: 3
   },
   {
+    container: "service",
     name: "nax",
     email: "nax1@gamil.com",
     age: 4
   },
   {
+    container: "service",
     name: "najrul",
     email: "najrul@gamil.com",
     age: 30
   },
   {
+    container: "service",
     name: "nax1",
     email: "nax1@gamil.com",
     age: 40
@@ -38,6 +44,7 @@ const rows = [
 
 
 const store = createStore({
+  container: xv.string(),
   name: xv.string().min(3).max(50),
   email: xv.string().min(5).max(100),
   age: xv.number().optional().min(1).max(150)
@@ -47,7 +54,7 @@ const store = createStore({
 })
 
 const d = store.createMany({
-  disablelObservation: false,
+  disableObservation: false,
   data: rows
 })
 
@@ -55,9 +62,12 @@ function A() {
   const [email, setEmail] = React.useState("nax@gamil.com")
   const all = store.find({
     where: {
-      name: 3
+      container: "service"
     }
   })
+
+  console.log(all);
+
 
   return (
     <div>

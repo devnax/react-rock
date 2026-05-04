@@ -73,23 +73,23 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
    }
 
    createMany(args: CreateManyArgs<RS>): MakeRowType<RS>[] {
-      const { data, disablelObservation, observeId } = args
+      const { data, disableObservation, observeId } = args
       const res = []
       for (let row of data) {
          const created = this.create({
             data: row,
-            disablelObservation: true
+            disableObservation: true
          })
          res.push(created)
       }
-      if (!disablelObservation) {
+      if (!disableObservation) {
          this.dispatch(observeId)
       }
       return res
    }
    // Row Methods
    create(args: CreateArgs<RS>): MakeRowType<RS> {
-      const { data, disablelObservation, observeId } = args
+      const { data, disableObservation, observeId } = args
       // validate and create row
       let r: any = {} as MakeRowType<RS>
       for (let key in this._row_schema) {
@@ -106,7 +106,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       }
 
       this._rows.push(_row)
-      if (!disablelObservation) {
+      if (!disableObservation) {
          this.dispatch(observeId)
       }
       return _row
@@ -115,7 +115,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
 
    // update
    update(args: UpdateArgs<RS>): MakeRowType<RS>[] | null {
-      const { data, where, disablelObservation, observeId } = args
+      const { data, where, disableObservation, observeId } = args
       // validate row
       let r: any = {} as MakeRowType<RS>
       for (let key in data) {
@@ -138,26 +138,26 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
             const rowIndex = this._rows.findIndex(r => r.rid === rid)
             this._rows[rowIndex] = rows[index]
          }
-         if (!disablelObservation) {
+         if (!disableObservation) {
             this.dispatch(observeId)
          }
       }
-      return this.find({ where, disablelObservation: true })
+      return this.find({ where, disableObservation: true })
    }
 
    // delete
    delete(args: DeleteArgs<RS>): number {
-      const { where, disablelObservation, observeId } = args
+      const { where, disableObservation, observeId } = args
       const rows = this.find({
          where,
-         disablelObservation: true
+         disableObservation: true
       })
 
       let deletedCount = 0
       if (rows.length > 0) {
          this._rows = this._rows.filter(r => !rows.find(dr => dr.rid === r.rid))
          deletedCount = rows.length
-         if (!disablelObservation) {
+         if (!disableObservation) {
             this.dispatch(observeId)
          }
       }
@@ -166,121 +166,96 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
 
    // find
    find(args: FindArgs<RS>): MakeRowType<RS>[] {
+      const { where, disableObservation, observeId } = args;
 
-      let { where, disablelObservation, observeId } = args
-
-      if (!disablelObservation) {
-         this.observe(observeId)
+      if (!disableObservation) {
+         this.observe(observeId);
       }
 
-      if (!where) {
-         return this._rows
-      }
-      const rows: MakeRowType<RS>[] = []
+      const rows: MakeRowType<RS>[] = [];
 
       for (const row of this._rows) {
-         const match = Object.keys(row).find(column => {
-            let _match = true
-            const rvalue = row[column]
+         let match = true;
 
-            for (let wcol in where) {
-               const wv = where[wcol]
+         for (const wcol in where) {
+            const condition = where[wcol];
+            const rvalue = row[wcol];
 
-               if (typeof wv === "object" && wv !== null) {
+            if (typeof condition === "object" && condition !== null) {
 
-                  if (wv.contain !== undefined) {
-                     if (typeof rvalue === "string" && typeof wv.contain === "string") {
-                        if (!rvalue.includes(wv.contain)) {
-                           _match = false
-                        }
-                     } else {
-                        _match = false
-                     }
+               if (condition.contain !== undefined) {
+                  if (typeof rvalue !== "string" || !rvalue.includes(condition.contain as any)) {
+                     match = false;
+                     break;
                   }
-
-                  if (wv.startWith !== undefined) {
-                     if (typeof rvalue === "string" && typeof wv.startWith === "string") {
-                        if (!rvalue.startsWith(wv.startWith)) {
-                           _match = false
-                        }
-                     } else {
-                        _match = false
-                     }
-                  }
-                  if (wv.endWith !== undefined) {
-                     if (typeof rvalue === "string" && typeof wv.endWith === "string") {
-                        if (!rvalue.endsWith(wv.endWith)) {
-                           _match = false
-                        }
-                     } else {
-                        _match = false
-                     }
-                  }
-                  if (wv.equalWith !== undefined) {
-                     if (rvalue !== wv.equalWith) {
-                        _match = false
-                     }
-                  }
-                  if (wv.notEqualWith !== undefined) {
-                     if (rvalue === wv.notEqualWith) {
-                        _match = false
-                     }
-                  }
-                  if (wv.gt !== undefined) {
-                     if (typeof rvalue === "number") {
-                        if (!(rvalue > wv.gt)) {
-                           _match = false
-                        }
-                     } else {
-                        _match = false
-                     }
-                  }
-                  if (wv.lt !== undefined) {
-                     if (typeof rvalue === "number") {
-                        if (!(rvalue < wv.lt)) {
-                           _match = false
-                        }
-                     } else {
-                        _match = false
-                     }
-                  }
-                  if (wv.gte !== undefined) {
-                     if (typeof rvalue === "number") {
-                        if (!(rvalue >= wv.gte)) {
-                           _match = false
-                        }
-                     } else {
-                        _match = false
-                     }
-                  }
-                  if (wv.lte !== undefined) {
-                     if (typeof rvalue === "number") {
-                        if (!(rvalue <= wv.lte)) {
-                           _match = false
-                        }
-                     } else {
-                        _match = false
-                     }
-                  }
-                  continue
                }
 
-               if (wv !== rvalue) {
-                  _match = false
-                  break
-               } else {
+               if (condition.startWith !== undefined) {
+                  if (typeof rvalue !== "string" || !rvalue.startsWith(condition.startWith as any)) {
+                     match = false;
+                     break;
+                  }
+               }
 
+               if (condition.endWith !== undefined) {
+                  if (typeof rvalue !== "string" || !rvalue.endsWith(condition.endWith as any)) {
+                     match = false;
+                     break;
+                  }
+               }
+
+               if (condition.equalWith !== undefined && rvalue !== condition.equalWith) {
+                  match = false;
+                  break;
+               }
+
+               if (condition.notEqualWith !== undefined && rvalue === condition.notEqualWith) {
+                  match = false;
+                  break;
+               }
+
+               if (condition.gt !== undefined) {
+                  if (typeof rvalue !== "number" || !(rvalue > condition.gt)) {
+                     match = false;
+                     break;
+                  }
+               }
+
+               if (condition.lt !== undefined) {
+                  if (typeof rvalue !== "number" || !(rvalue < condition.lt)) {
+                     match = false;
+                     break;
+                  }
+               }
+
+               if (condition.gte !== undefined) {
+                  if (typeof rvalue !== "number" || !(rvalue >= condition.gte)) {
+                     match = false;
+                     break;
+                  }
+               }
+
+               if (condition.lte !== undefined) {
+                  if (typeof rvalue !== "number" || !(rvalue <= condition.lte)) {
+                     match = false;
+                     break;
+                  }
+               }
+
+            } else {
+               if (condition !== rvalue) {
+                  match = false;
+                  break;
                }
             }
-
-            return _match
-         })
+         }
 
          if (match) {
-            rows.push(row)
+            rows.push(row);
          }
       }
-      return rows
+
+      return rows;
    }
 
    findOne(args: FindArgs<RS>): MakeRowType<RS> | null {
@@ -297,11 +272,11 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
    }
 
    move(args: MoveArgs<RS>): boolean {
-      const { fromIndex, toIndex, disablelObservation, observeId } = args
+      const { fromIndex, toIndex, disableObservation, observeId } = args
       if (fromIndex < 0 || toIndex < 0) return false
       const [movedRow] = this._rows.splice(fromIndex, 1)
       this._rows.splice(toIndex, 0, movedRow)
-      if (!disablelObservation) {
+      if (!disableObservation) {
          this.dispatch(observeId)
       }
       return true
