@@ -32,8 +32,10 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
          const id = observeId || hid
          const [, dispatch] = ustate(0)
          this._hooks.set(id, () => dispatch(Math.random()))
-         ueffect(() => () => {
-            this._hooks.delete(id)
+         ueffect(() => {
+            return () => {
+               this._hooks.delete(id)
+            }
          }, [])
       } catch (error) { }
    }
@@ -62,13 +64,17 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       }, 0)
    }
 
-   rows(observe = true) {
-      observe && this.observe()
+   rows(disableObservation = false) {
+      if (!disableObservation) {
+         this.observe();
+      }
       return this._rows
    }
 
-   metas(observe = true) {
-      observe && this.observe()
+   metas(disableObservation = false) {
+      if (!disableObservation) {
+         this.observe();
+      }
       return this._meta
    }
 
@@ -112,7 +118,6 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return _row
    }
 
-
    // update
    update(args: UpdateArgs<RS>): MakeRowType<RS>[] | null {
       const { data, where, disableObservation, observeId } = args
@@ -124,7 +129,7 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
          r[key] = schema.parse(data[key])
       }
 
-      const rows = this.find({ where })
+      const rows = this.find({ disableObservation: true, where })
       if (rows.length > 0) {
          for (let index = 0; index < rows.length; index++) {
             const _row = rows[index];
@@ -282,25 +287,32 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
       return true
    }
 
-   // Meta Methods
-   setMeta<T extends keyof Infer<MS>>(key: T, value: Infer<MS>[T], observe = true) {
+   setMeta<T extends keyof Infer<MS>>(key: T, value: Infer<MS>[T], disableObservation = false) {
       this._meta.set(key, this._meta_schema ? (this._meta_schema as any)[key].parse(value) : value)
-      observe && this.dispatch()
+      if (!disableObservation) {
+         this.dispatch()
+      }
    }
 
-   getMeta<T extends keyof Infer<MS>>(key: T, observe = true): Infer<MS>[T] | undefined {
-      observe && this.observe()
+   getMeta<T extends keyof Infer<MS>>(key: T, disableObservation = false): Infer<MS>[T] | undefined {
+      if (!disableObservation) {
+         this.observe();
+      }
       return this._meta.get(key) as Infer<MS>[T] | undefined
    }
 
-   deleteMeta<T extends keyof Infer<MS>>(key: T, observe = true) {
+   deleteMeta<T extends keyof Infer<MS>>(key: T, disableObservation = false) {
       this._meta.delete(key)
-      observe && this.dispatch()
+      if (!disableObservation) {
+         this.dispatch()
+      }
    }
 
-   clearMeta(observe = true) {
+   clearMeta(disableObservation = false) {
       this._meta.clear()
-      observe && this.dispatch()
+      if (!disableObservation) {
+         this.dispatch()
+      }
    }
 }
 
