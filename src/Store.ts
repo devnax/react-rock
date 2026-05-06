@@ -29,10 +29,10 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
    private observe = (observeId?: string) => {
       try {
          const hid = uid()
-         const id = observeId || hid
+         const id = observeId ?? hid
          const [, dispatch] = ustate(0)
-         this._hooks.set(id, () => dispatch(Math.random()))
          ueffect(() => {
+            this._hooks.set(id, () => dispatch(Math.random()))
             return () => {
                this._hooks.delete(id)
             }
