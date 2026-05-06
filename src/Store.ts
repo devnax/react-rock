@@ -42,25 +42,25 @@ class Store<RS extends RowSchema, MS extends MetaSchema | undefined = undefined>
 
    dispatch(observeIdOrCallbabck?: string | ((cb: Function, key: string) => void)) {
       clearTimeout(this._timer)
-      const isFn = typeof observeIdOrCallbabck === "function"
       this._timer = setTimeout(() => {
-         this._hooks.forEach((cb, key) => {
-            try {
-               if (isFn) {
-                  observeIdOrCallbabck(cb, key)
-               } else {
-                  if (observeIdOrCallbabck) {
-                     if (key === observeIdOrCallbabck) {
-                        cb()
-                     }
+         if (typeof observeIdOrCallbabck === "string") {
+            const cb = this._hooks.get(observeIdOrCallbabck)
+            if (cb) {
+               cb()
+            }
+         } else {
+            this._hooks.forEach((cb, key) => {
+               try {
+                  if (typeof observeIdOrCallbabck === "function") {
+                     observeIdOrCallbabck(cb, key)
                   } else {
                      cb()
                   }
+               } catch (_err) {
+                  this._hooks.delete(key)
                }
-            } catch (_err) {
-               this._hooks.delete(key)
-            }
-         })
+            })
+         }
       }, 0)
    }
 
