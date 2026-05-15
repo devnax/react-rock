@@ -5,6 +5,7 @@ import {
   CreateManyArgs,
   DeleteArgs,
   FindArgs,
+  Hooks,
   MakeMetaType,
   MakeRowType,
   MetaSchema,
@@ -29,7 +30,7 @@ class Store<
     keyof MakeMetaType<MS>,
     MakeMetaType<MS>[keyof MakeMetaType<MS>]
   > = new Map();
-  private _hooks: Map<string, Function> = new Map();
+  private _hooks: Hooks = new Map();
   private _row_schema: RS;
   private _meta_schema?: MS;
   private _last_id = 0;
@@ -47,39 +48,53 @@ class Store<
     this._meta_schema = metaSchema;
   }
 
-  observe = (observeId?: string) => {
+  observe = (observeId: string = "default") => {
     try {
-      const hid = uid();
-      const id = observeId ?? hid;
+      const _uid = uid();
       const [, dispatch] = ustate(0);
       ueffect(() => {
-        this._hooks.set(id, () => dispatch(Math.random()));
+        const factory = this._hooks.get(observeId) || new Map();
+        factory.set(_uid, () => dispatch(Math.random()));
+        this._hooks.set(observeId, factory);
         return () => {
-          this._hooks.delete(id);
+          factory.delete(_uid);
+          if (factory.size) {
+            this._hooks.set(observeId, factory);
+          } else {
+            this._hooks.delete(observeId);
+          }
         };
       }, []);
     } catch (error) {}
   };
 
   dispatch(
-    observeIdOrCallbabck?: string | ((cb: Function, key: string) => void),
+    observeIdOrCallback?: string | ((cb: Function, key: string) => void),
   ) {
-    if (typeof observeIdOrCallbabck === "string") {
-      const cb = this._hooks.get(observeIdOrCallbabck);
-      if (cb) {
-        cb();
-      }
-    } else {
-      this._hooks.forEach((cb, key) => {
+    if (typeof observeIdOrCallback === "string") {
+      const factory = this._hooks.get(observeIdOrCallback);
+      factory?.forEach((cb, _uid) => {
         try {
-          if (typeof observeIdOrCallbabck === "function") {
-            observeIdOrCallbabck(cb, key);
-          } else {
-            cb();
-          }
+          cb();
         } catch (_err) {
-          this._hooks.delete(key);
+          factory.delete(_uid);
+          this._hooks.set(observeIdOrCallback, factory);
         }
+      });
+    } else {
+      this._hooks.forEach((factory, key) => {
+        factory?.forEach((cb, _uid) => {
+          try {
+            if (typeof observeIdOrCallback === "function") {
+              observeIdOrCallback(cb, key);
+            } else {
+              cb();
+            }
+          } catch (_err) {
+            factory.delete(_uid);
+            this._hooks.set(key, factory);
+          }
+        });
       });
     }
   }
