@@ -23,13 +23,13 @@ class Store<
   RS extends RowSchema,
   MS extends MetaSchema | undefined = undefined,
 > {
-  private _rows: MakeRowType<RS>[] = [];
+  // private _rows: MakeRowType<RS>[] = [];
+  private _rows = new Map<number, MakeRowType<RS>>();
   private _meta: Map<
     keyof MakeMetaType<MS>,
     MakeMetaType<MS>[keyof MakeMetaType<MS>]
   > = new Map();
   private _hooks: Map<string, Function> = new Map();
-  private _timer: any = null;
   private _row_schema: RS;
   private _meta_schema?: MS;
   private _last_id = 0;
@@ -131,7 +131,7 @@ class Store<
       vid: this._row_schema.vid.parse(undefined),
     };
 
-    this._rows.push(_row);
+    this._rows.set(_row.rid, _row);
     if (!disableObservation) {
       this.dispatch(observeId);
     }
@@ -154,14 +154,12 @@ class Store<
       for (let index = 0; index < rows.length; index++) {
         const _row = rows[index];
         const rid = _row.rid;
-        rows[index] = {
+        this._rows.set(rid, {
           ..._row,
           ...r,
           rid,
           vid: this._row_schema.vid.parse(undefined),
-        };
-        const rowIndex = this._rows.findIndex((r) => r.rid === rid);
-        this._rows[rowIndex] = rows[index];
+        });
       }
       if (!disableObservation) {
         this.dispatch(observeId);
@@ -178,12 +176,11 @@ class Store<
       disableObservation: true,
     });
 
-    let deletedCount = 0;
+    let deletedCount = rows.length;
     if (rows.length > 0) {
-      this._rows = this._rows.filter(
-        (r) => !rows.find((dr) => dr.rid === r.rid),
-      );
-      deletedCount = rows.length;
+      for (let row of rows) {
+        this._rows.delete(row.rid);
+      }
       if (!disableObservation) {
         this.dispatch(observeId);
       }
@@ -201,7 +198,7 @@ class Store<
 
     const rows: MakeRowType<RS>[] = [];
 
-    for (const row of this._rows) {
+    for (const row of Array.from(this._rows.values())) {
       let match = true;
 
       for (const wcol in where) {
@@ -303,10 +300,18 @@ class Store<
     return rows.length > 0 ? rows[0] : null;
   }
 
+  findById(rid: number, disableObservation = false) {
+    if (!disableObservation) {
+      this.observe(rid.toString());
+    }
+    return this._rows.get(rid);
+  }
+
   getIndex(args: FindArgs<RS>): number {
     const row = this.findOne(args);
     if (row) {
-      return this._rows.findIndex((r) => r.rid === row.rid);
+      const keys = Array.from(this._rows.keys());
+      return keys.indexOf(row.rid);
     }
     return -1;
   }
@@ -314,11 +319,21 @@ class Store<
   move(args: MoveArgs<RS>): boolean {
     const { fromIndex, toIndex, disableObservation, observeId } = args;
     if (fromIndex < 0 || toIndex < 0) return false;
-    const [movedRow] = this._rows.splice(fromIndex, 1);
-    this._rows.splice(toIndex, 0, movedRow);
+    const entries = [...Array.from(this._rows.entries())];
+    if (fromIndex >= entries.length || toIndex >= entries.length) {
+      return false;
+    }
+
+    const [movedItem] = entries.splice(fromIndex, 1);
+
+    entries.splice(toIndex, 0, movedItem);
+
+    this._rows = new Map(entries);
+
     if (!disableObservation) {
       this.dispatch(observeId);
     }
+
     return true;
   }
 
