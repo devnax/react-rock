@@ -70,8 +70,8 @@ export type QueryValueType = {
   lte?: number;
 };
 
-type HookObserveId = string;
-type HookUID = string;
+export type HookObserveId = string;
+export type HookUID = string;
 export type HooksValue = Map<HookUID, Function>;
 export type Hooks = Map<HookObserveId, HooksValue>;
 

@@ -31,6 +31,7 @@ class Store<
     MakeMetaType<MS>[keyof MakeMetaType<MS>]
   > = new Map();
   private _hooks: Hooks = new Map();
+  private _pending_hook_uids: string[] = [];
   private _row_schema: RS;
   private _meta_schema?: MS;
   private _last_id = 0;
@@ -65,6 +66,7 @@ class Store<
           }
         };
       }, []);
+      return _uid;
     } catch (error) {}
   };
 
@@ -90,6 +92,19 @@ class Store<
             } else {
               cb();
             }
+          } catch (_err) {
+            factory.delete(_uid);
+            this._hooks.set(key, factory);
+          }
+        });
+      });
+    }
+
+    if (this._pending_hook_uids.length) {
+      this._hooks.forEach((factory, key) => {
+        factory?.forEach((cb, _uid) => {
+          try {
+            cb();
           } catch (_err) {
             factory.delete(_uid);
             this._hooks.set(key, factory);
@@ -206,9 +221,9 @@ class Store<
   // find
   find(args: FindArgs<RS>): MakeRowType<RS>[] {
     const { where, disableObservation, observeId } = args;
-
+    let _uid;
     if (!disableObservation) {
-      this.observe(observeId);
+      _uid = this.observe(observeId);
     }
 
     const rows: MakeRowType<RS>[] = [];
@@ -307,6 +322,13 @@ class Store<
       }
     }
 
+    if (_uid && !rows.length) {
+      this._pending_hook_uids.push(_uid);
+    } else if (this._pending_hook_uids.includes(_uid)) {
+      const index = this._pending_hook_uids.indexOf(_uid);
+      this._pending_hook_uids.splice(index, 1);
+    }
+
     return rows;
   }
 
@@ -316,10 +338,18 @@ class Store<
   }
 
   findById(rid: number, disableObservation = false) {
+    let _uid;
     if (!disableObservation) {
-      this.observe(rid.toString());
+      _uid = this.observe(rid.toString());
     }
-    return this._rows.get(rid);
+    const row = this._rows.get(rid);
+    if (_uid && !row) {
+      this._pending_hook_uids.push(_uid);
+    } else if (this._pending_hook_uids.includes(_uid)) {
+      const index = this._pending_hook_uids.indexOf(_uid);
+      this._pending_hook_uids.splice(index, 1);
+    }
+    return row;
   }
 
   getIndex(args: FindArgs<RS>): number {
