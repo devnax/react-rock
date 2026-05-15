@@ -207,9 +207,8 @@ class Store<
   // find
   find(args: FindArgs<RS>): MakeRowType<RS>[] {
     const { where, disableObservation, observeId } = args;
-    let _uid;
     if (!disableObservation) {
-      _uid = this.observe(observeId);
+      this.observe(observeId);
     }
 
     const rows: MakeRowType<RS>[] = [];
@@ -317,20 +316,18 @@ class Store<
   }
 
   findById(rid: number, disableObservation = false) {
-    let _uid;
     if (!disableObservation) {
-      _uid = this.observe(rid.toString());
+      this.observe(rid.toString());
     }
     return this._rows.get(rid);
   }
 
-  getIndex(args: FindArgs<RS>): number {
-    const row = this.findOne(args);
-    if (row) {
-      const keys = Array.from(this._rows.keys());
-      return keys.indexOf(row.rid);
+  getIndex(rid: number, disableObservation = false): number {
+    if (!disableObservation) {
+      this.observe(rid.toString());
     }
-    return -1;
+    const keys = Array.from(this._rows.keys());
+    return keys.indexOf(rid);
   }
 
   move(args: MoveArgs<RS>): boolean {
