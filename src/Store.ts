@@ -104,7 +104,7 @@ class Store<
     if (!disableObservation) {
       this.observe();
     }
-    return this._rows;
+    return Array.from(this._rows.values());
   }
 
   metas(disableObservation = false) {
